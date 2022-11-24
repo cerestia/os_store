@@ -45,7 +45,7 @@ detect_memory:
 
     mov byte [0xb800],'P'
 
-    xchg bx, bx
+    ;xchg bx, bx
     jmp prepare_protected_mode
 
 prepare_protected_mode:

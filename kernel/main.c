@@ -4,21 +4,19 @@
 #include <onix/string.h>
 #include <onix/console.h>
 #include <onix/printk.h>
+#include <onix/assert.h>
+#include <onix/debug.h>
+#include <onix/global.h>
+
 
 int magic = ONIX_MAGIC;
 char message[] = "hello onix!";
 char buf[1024];
 
-
 void kernel_init()
 {
    
     console_init();
-    
-    int cnt = 30;
-    while(cnt--){
-        printk("hello onix %d\n",cnt);
-    }
-
+    gdt_init();
     return;
 }
