@@ -6,7 +6,7 @@ descriptor_t gdt[GDT_SIZE];
 pointer_t gdt_ptr;
 
 void gdt_init(){
-    DEBUGK("init  gdt_ptr");
+    DEBUGK("init  gdt_ptr\n");
 
     asm volatile("sgdt gdt_ptr");
 

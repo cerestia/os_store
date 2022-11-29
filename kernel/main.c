@@ -1,22 +1,23 @@
-#include <onix/onix.h>
-#include <onix/types.h>
-#include <onix/io.h>
-#include <onix/string.h>
-#include <onix/console.h>
-#include <onix/printk.h>
-#include <onix/assert.h>
-#include <onix/debug.h>
-#include <onix/global.h>
+extern void console_init();
+extern void gdt_init();
+extern void interrupt_init();
+extern void clock_init();
+extern void hang();
+extern void time_init();
 
-
-int magic = ONIX_MAGIC;
 char message[] = "hello onix!";
 char buf[1024];
 
 void kernel_init()
 {
-   
+
     console_init();
     gdt_init();
+    interrupt_init();
+
+    //task_init(); 
+    clock_init(); 
+    time_init();
+    asm volatile("sti");
     return;
 }

@@ -4,6 +4,7 @@ extern kernel_init
 
 global _start
 _start:
-    ;mov byte [0xb8000],'K'
     call kernel_init
+    ;;xchg bx,bx
+    ;int 0x80
     jmp $

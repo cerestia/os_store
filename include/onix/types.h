@@ -11,6 +11,9 @@
 #define false 0
 
 #define _packed __attribute__((packed)) // 用于定义特殊的结构体
+//省略栈帧
+#define _ofp __attribute__((optimize("omit-frame-pointer")))
+
 
 typedef unsigned int size_t;
 
@@ -23,5 +26,7 @@ typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
 typedef unsigned long long u64;
+
+typedef u32 time_t;
 
 #endif
