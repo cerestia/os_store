@@ -1,6 +1,8 @@
 #ifndef ONIX_TYPES_H
 #define ONIX_TYPES_H
 
+#include <onix/onix.h>
+
 #define EOF -1 // END OF FILE
 
 #define NULL ((void*)0) // 空指针
