@@ -67,7 +67,7 @@ static u32 start_page = 0;
 static u8* memory_map;
 static u32 memory_map_pages;
 
-void meomry_map_init(){
+void memory_map_init(){
     //initial physical memory array
     memory_map = (u8*) memory_base;
 
@@ -117,13 +117,57 @@ static void put_page(u32 addr){
     LOGK("Put page 0x%p\n",addr);
 }
 
-void memory_test(){
-    u32 pages[10];
-    for(size_t i=0;i<10;i++){
-        pages[i] = get_one_page();
+u32 inline get_cr3(){
+    asm volatile("movl %cr3,%eax\n");
+}
+
+// 设置 cr3 寄存器，参数是页目录的地址
+void inline set_cr3(u32 pde){
+    ASSERT_PAGE(pde);
+    asm volatile("movl %%eax, %%cr3\n" ::"a"(pde));
+}
+
+static inline void enable_page(){
+    asm volatile(
+        "movl %cr0, %eax\n"
+        "orl $0x80000000, %eax\n"
+        "movl %eax, %cr0\n");
+}
+
+static void entry_init(page_entry_t* entry,u32 index){
+    *(u32 *)entry = 0;
+    entry->present = 1;
+    entry->write = 1;
+    entry->user = 1;
+    entry->index = index;
+}
+
+#define KERNEL_PAGE_DIR 0x200000
+
+// 内核页表
+#define KERNEL_PAGE_ENTRY 0x201000
+
+void mapping_init(){
+    page_entry_t* pde = (page_entry_t*)KERNEL_PAGE_DIR;
+    memset(pde,0,PAGE_SIZE);
+    entry_init(&pde[0],IDX(KERNEL_PAGE_ENTRY));
+
+    page_entry_t* pte = (page_entry_t*)KERNEL_PAGE_ENTRY;
+    memset(pte,0,PAGE_SIZE);
+
+    page_entry_t* entry;
+    for(size_t tidx=0;tidx<1024;tidx++){
+        entry = &pte[tidx];
+        entry_init(entry,tidx);
+        memory_map[tidx] = 1; //设置物理内存数组，该页被占用
     }
 
-    for(size_t i=0;i<10;i++){
-        put_page(pages[i]);
-    }
+    BMB;
+
+    // 设置 cr3 寄存器
+    set_cr3((u32)pde);
+
+    BMB;
+    enable_page();
 }
+
