@@ -39,12 +39,8 @@ void stop_beep(){
 u32 clock_handler(int vector){
     assert(vector==0x20);
     send_eoi(vector);
-    // if(jiffies%200 == 0){
-    //     start_beep();
-    // }
     jiffies++;
-    //DEBUGK("clock jiffies %d ...\n",jiffies);
-    //stop_beep();
+    stop_beep();
 }
 
 void pit_init(){

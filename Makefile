@@ -40,7 +40,15 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/lib/vsprintf.o \
 	$(BUILD)/kernel/assert.o \
 	$(BUILD)/kernel/debug.o \
-	$(BUILD)/kernel/global.o
+	$(BUILD)/kernel/global.o \
+	$(BUILD)/kernel/schedule.o \
+	$(BUILD)/kernel/task.o \
+	$(BUILD)/kernel/interrupt.o \
+	$(BUILD)/kernel/handler.o \
+	$(BUILD)/lib/stdlib.o \
+	$(BUILD)/kernel/clock.o \
+	$(BUILD)/kernel/time.o \
+	$(BUILD)/kernel/rtc.o \
 
 	$(shell mkdir -p $(dir $@))
 	ld -m elf_i386 -static $^ -o $@ -Ttext $(ENTRYPOINT)
@@ -64,23 +72,27 @@ test:$(BUILD)/master.img
 
 .PHONY:clean
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD)/boot/*
+	rm -rf $(BUILD)/kernrl/*
+	rm -rf $(BUILD)/lib/*
+
 
 .PHONY: bochs
 	bochs: $(BUILD)/master.img
 			bochs -q
 
-.PHONY: qemu
-qemu: $(BUILD)/master.img
-	qemu-system-i386 \
+QEMU :=qemu-system-i386 \
 	-m 32M \
 	-boot c \
-	-hda $<
+	-drive file=$(BUILD)/master.img,index=0,media=disk,format=raw \
+	-audiodev pa,id=hda \
+	-rtc base=localtime \
+	-machine pcspk-audiodev=hda \
+
+.PHONY: qemu
+qemu: $(BUILD)/master.img
+	$(QEMU)
 
 .PHONY: qemug
 qemug: $(BUILD)/master.img
-	qemu-system-i386 \
-	-s -S \
-	-m 32M \
-	-boot c \
-	-hda $<
+	$(QEMU) -s -S 
