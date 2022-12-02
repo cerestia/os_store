@@ -1,13 +1,14 @@
 #ifndef ONIX_MEMROY_H
 #define ONIX_MEMROY_H
 
-#include<onix/types.h>
+#include <onix/types.h>
 
-#define PAGE_SIZE 0x1000 
-#define MEMORY_BASE 0x100000 //1 M 内存开始位置
+#define PAGE_SIZE 0x1000
+#define MEMORY_BASE 0x100000 // 1 M 内存开始位置
 
-typedef struct page_entry_t{
-     u8 present : 1;  // 在内存中
+typedef struct page_entry_t
+{
+    u8 present : 1;  // 在内存中
     u8 write : 1;    // 0 只读 1 可读可写
     u8 user : 1;     // 1 所有人 0 超级用户 DPL < 3
     u8 pwt : 1;      // page write through 1 直写模式，0 回写模式
@@ -18,9 +19,14 @@ typedef struct page_entry_t{
     u8 global : 1;   // 全局，所有进程都用到了，该页不刷新缓冲
     u8 ignored : 3;  // 该安排的都安排了，送给操作系统吧
     u32 index : 20;  // 页索引
-}_packed page_entry_t;
+} _packed page_entry_t;
 
 u32 get_cr3();
+//设置 cr3 寄存器，参数是页目录的地址
 void set_cr3(u32 pde);
+
+u32 alloc_kpage(u32 count);
+
+void free_kpage(u32 vaddr, u32 count);
 
 #endif

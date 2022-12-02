@@ -86,3 +86,18 @@ int bitmap_scan(bitmap_t *map, u32 count)
 #include <onix/debug.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
+void memory_test()
+{
+    u32 *pages = (u32 *)(0x200000);
+    u32 count = 0x6fe;
+    for (size_t i = 0; i < count; i++)
+    {
+        pages[i] = alloc_kpage(1);
+        LOGK("0x%x\n", i);
+    }
+
+    for (size_t i = 0; i < count; i++)
+    {
+        free_kpage(pages[i], 1);
+    }
+}
