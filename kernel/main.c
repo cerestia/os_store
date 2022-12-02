@@ -10,6 +10,8 @@ extern void rtc_init();
 extern void set_alarm();
 extern void memory_map_init();
 extern void mapping_init();
+// extern void memory_test();
+extern void bitmap_tests();
 
 char message[] = "hello onix!";
 char buf[1024];
@@ -20,13 +22,12 @@ void kernel_init()
     mapping_init();
     interrupt_init();
 
-    //task_init(); 
-    //clock_init(); 
-    //time_init();
-    //rtc_init();    
-    BMB;
-    char* ptr = (char*)(0x100000*20);
-    ptr[0] = 'a';
-    //asm volatile("sti");
+    // task_init();
+    // clock_init();
+    // time_init();
+    // rtc_init();
+    // memory_test();
+    bitmap_tests();
+    // asm volatile("sti");
     hang();
 }
