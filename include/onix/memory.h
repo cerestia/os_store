@@ -6,6 +6,8 @@
 #define PAGE_SIZE 0x1000
 #define MEMORY_BASE 0x100000 // 1 M 内存开始位置
 
+#define KERNEL_PAGE_DIR 0x1000
+
 typedef struct page_entry_t
 {
     u8 present : 1;  // 在内存中

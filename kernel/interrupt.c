@@ -59,28 +59,34 @@ void send_eoi(int vector)
     }
 }
 
-void set_interrupt_handler(u32 irq,handler_t handler){
-    assert(irq >= 0 && irq<16);
-    handler_table[IRQ_MASTER_NR+irq] = handler;
+void set_interrupt_handler(u32 irq, handler_t handler)
+{
+    assert(irq >= 0 && irq < 16);
+    handler_table[IRQ_MASTER_NR + irq] = handler;
 }
 
-void set_interrupt_mask(u32 irq, bool enable){
-    assert(irq >=0 && irq <16);
+void set_interrupt_mask(u32 irq, bool enable)
+{
+    assert(irq >= 0 && irq < 16);
     u16 port;
     //主片
-    if(irq <8 ){
+    if (irq < 8)
+    {
         port = PIC_M_DATA;
     }
     //从片
-    else{
+    else
+    {
         port = PIC_S_DATA;
         irq -= 8;
     }
-    if(enable){
-        outb(port,inb(port)&~(1<<irq));
+    if (enable)
+    {
+        outb(port, inb(port) & ~(1 << irq));
     }
-    else{
-        outb(port,inb(port)|(1<<irq));
+    else
+    {
+        outb(port, inb(port) | (1 << irq));
     }
 }
 
@@ -88,7 +94,7 @@ u32 counter = 0;
 void default_handler(int vector)
 {
     send_eoi(vector);
-    DEBUGK("[%d] default interrupt called %d...\n",vector,counter);
+    DEBUGK("[%d] default interrupt called %d...\n", vector, counter);
 }
 
 void exception_handler(
@@ -153,7 +159,7 @@ void idt_init()
     for (size_t i = 0; i < 0x20; i++)
     {
         handler_table[i] = exception_handler;
-    } 
+    }
     for (size_t i = 0x20; i < ENTRY_SIZE; i++)
     {
         handler_table[i] = default_handler;
@@ -168,4 +174,35 @@ void interrupt_init()
 {
     pic_init();
     idt_init();
+}
+
+bool interrupt_disable()
+{
+    asm volatile(
+        "pushfl\n"        // 将当前 eflags 压入栈中
+        "cli\n"           // 清除 IF 位，此时外中断已被屏蔽
+        "popl %eax\n"     // 将刚才压入的 eflags 弹出到 eax
+        "shrl $9, %eax\n" // 将 eax 右移 9 位，得到 IF 位
+        "andl $1, %eax\n" // 只需要 IF 位
+    );
+}
+
+// 获得 IF 位
+bool get_interrupt_state()
+{
+    asm volatile(
+        "pushfl\n"        // 将当前 eflags 压入栈中
+        "popl %eax\n"     // 将压入的 eflags 弹出到 eax
+        "shrl $9, %eax\n" // 将 eax 右移 9 位，得到 IF 位
+        "andl $1, %eax\n" // 只需要 IF 位
+    );
+}
+
+// 设置 IF 位
+void set_interrupt_state(bool state)
+{
+    if (state)
+        asm volatile("sti\n");
+    else
+        asm volatile("cli\n");
 }

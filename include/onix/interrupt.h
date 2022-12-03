@@ -23,23 +23,27 @@
 #define IRQ_MASTER_NR 0x20 // 主片起始向量号
 #define IRQ_SLAVE_NR 0x28  // 从片起始向量号
 
-
-typedef struct gate_t{
+typedef struct gate_t
+{
     u16 offset0;
     u16 selector;
     u8 reverved;
-    u8 type:4;
-    u8 segment:1;
-    u8 DPL:2;
-    u8 present:1;
+    u8 type : 4;
+    u8 segment : 1;
+    u8 DPL : 2;
+    u8 present : 1;
     u16 offset1;
-}_packed gate_t;
+} _packed gate_t;
 
-typedef void* handler_t;//中断处理函数
+typedef void *handler_t; //中断处理函数
 
 void send_eoi(int vector);
 
 void set_interrupt_handler(u32 irq, handler_t handler);
 void set_interrupt_mask(u32 irq, bool enable);
+
+bool interrupt_disable();             // 清除 IF 位，返回设置之前的值
+bool get_interrupt_state();           // 获得 IF 位
+void set_interrupt_state(bool state); // 设置 IF 位
 
 #endif
