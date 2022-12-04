@@ -27,7 +27,7 @@ typedef struct gate_t
 {
     u16 offset0;
     u16 selector;
-    u8 reverved;
+    u8 reserved;
     u8 type : 4;
     u8 segment : 1;
     u8 DPL : 2;

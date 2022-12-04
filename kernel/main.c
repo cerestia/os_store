@@ -14,6 +14,7 @@ extern void mapping_init();
 extern void memory_test();
 extern void task_init();
 extern void set_interrupt_state();
+extern void syscall_init();
 
 char message[] = "hello onix!";
 char buf[1024];
@@ -26,6 +27,7 @@ void kernel_init()
     clock_init();
     task_init();
 
-    set_interrupt_state(true);
-    hang();
+    // set_interrupt_state(true);
+    syscall_init();
+    // hang();
 }

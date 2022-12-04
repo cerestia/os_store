@@ -1,6 +1,7 @@
 #include <onix/console.h>
 #include <onix/io.h>
 #include <onix/string.h>
+#include <onix/interrupt.h>
 
 #define CRT_ADDR_REG 0x3D4 // CRT(6845)索引寄存器
 #define CRT_DATA_REG 0x3D5 // CRT(6845)数据寄存器
@@ -39,9 +40,10 @@ static u8 attr = 7;        // 字符样式
 static u16 erase = 0x0720; // 空格
 
 //获得当前显示器的开始位置
-static void get_screen(){
-    outb(CRT_ADDR_REG,CRT_CURSOR_H);
-    screen = inb(CRT_DATA_REG)<<8;
+static void get_screen()
+{
+    outb(CRT_ADDR_REG, CRT_CURSOR_H);
+    screen = inb(CRT_DATA_REG) << 8;
     outb(CRT_ADDR_REG, CRT_START_ADDR_L);
     screen |= inb(CRT_DATA_REG);
 
@@ -50,8 +52,9 @@ static void get_screen(){
 }
 
 //设置显示器开始位置
-static void set_screen(){
-    outb(CRT_ADDR_REG,CRT_START_ADDR_H);
+static void set_screen()
+{
+    outb(CRT_ADDR_REG, CRT_START_ADDR_H);
     outb(CRT_DATA_REG, ((screen - MEM_BASE) >> 9) & 0xff);
     outb(CRT_ADDR_REG, CRT_START_ADDR_L);
     outb(CRT_DATA_REG, ((screen - MEM_BASE) >> 1) & 0xff);
@@ -91,7 +94,7 @@ void console_clear()
     set_screen();
 
     u16 *ptr = (u16 *)MEM_BASE;
-    while (ptr < (u16*)MEM_END)
+    while (ptr < (u16 *)MEM_END)
     {
         *ptr++ = erase;
     }
@@ -100,14 +103,15 @@ void console_clear()
 // 向上滚屏
 static void scroll_up()
 {
-    if(screen + SCR_SIZE + ROW_SIZE >= MEM_END)
+    if (screen + SCR_SIZE + ROW_SIZE >= MEM_END)
     {
-        memcpy((void*)MEM_BASE, (void*)screen, SCR_SIZE);
+        memcpy((void *)MEM_BASE, (void *)screen, SCR_SIZE);
         pos -= (screen - MEM_BASE);
         screen = MEM_BASE;
     }
-    u32 *ptr = (u32*)(screen + SCR_SIZE);
-    for(size_t i=0;i<WIDTH;i++){
+    u32 *ptr = (u32 *)(screen + SCR_SIZE);
+    for (size_t i = 0; i < WIDTH; i++)
+    {
         *ptr++ = erase;
     }
     screen += ROW_SIZE;
@@ -151,6 +155,8 @@ extern void start_beep();
 
 void console_write(char *buf, u32 count)
 {
+    bool intr = interrupt_disable();
+
     char ch;
     char *ptr = (char *)pos;
     while (count--)
@@ -191,16 +197,17 @@ void console_write(char *buf, u32 count)
                 command_lf();
             }
 
-            *((char*)pos)=ch;
+            *((char *)pos) = ch;
             pos++;
-            *((char*)pos)=attr;
+            *((char *)pos) = attr;
             pos++;
-            
+
             x++;
             break;
         }
     }
     set_cursor();
+    set_interrupt_state(intr);
 }
 
 void console_init()

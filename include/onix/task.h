@@ -28,7 +28,7 @@ typedef struct task_t
     u32 priority;
     u32 ticks;   //剩余时间片
     u32 jiffies; //上次执行全局时间片
-    u32 name[TASK_NAME_LEN];
+    char name[TASK_NAME_LEN];
     u32 uid;
     u32 pde; //页目录物理地址
     struct bitmap_t *vmap;
