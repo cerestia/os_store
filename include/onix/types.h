@@ -8,9 +8,24 @@
 #define NULL ((void *)0) // 空指针
 #define EOS '\0'
 
+#ifndef __cplusplus
+
 #define bool _Bool
+
 #define true 1
 #define false 0
+
+#else /* __cplusplus */
+
+/* Supporting in C++ is a GCC extension.  */
+
+#define _Bool bool
+
+#define bool bool
+#define false false
+#define true true
+
+#endif /* __cplusplus */
 
 #define _packed __attribute__((packed)) // 用于定义特殊的结构体
 //省略栈帧
