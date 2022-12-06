@@ -40,6 +40,7 @@ void stop_beep()
     }
 }
 
+
 u32 clock_handler(int vector)
 {
     assert(vector == 0x20);

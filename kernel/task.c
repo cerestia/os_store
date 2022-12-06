@@ -7,12 +7,15 @@
 #include <onix/string.h>
 #include <onix/bitmap.h>
 #include <onix/syscall.h>
+#include <onix/list.h>
 
 extern bitmap_t kernel_map;
 extern void task_switch(task_t *next);
 
 #define NR_TASKS 64
 static task_t *task_table[NR_TASKS];
+static list_t block_list; //任务默认阻塞队列
+static task_t *idle_task;
 
 static task_t *get_free_task()
 {
@@ -45,12 +48,47 @@ static task_t *task_search(task_state_t state)
         if (task == NULL || task->ticks < ptr->ticks || ptr->jiffies < task->jiffies)
             task = ptr;
     }
+
+    if (task == NULL && state == TASK_READY)
+    {
+        task == idle_task;
+    }
+
     return task;
 }
 
 void task_yield()
 {
     schedule();
+}
+
+void task_block(task_t *task, list_t *blist, task_state_t state)
+{
+    assert(!get_interrupt_state());
+    assert(task->node.next == NULL);
+    assert(task->node.prev == NULL);
+
+    if (blist == NULL)
+    {
+        blist = &block_list;
+    }
+    list_push(blist, &task->node);
+    assert(state != TASK_READY && state != TASK_RUNNING);
+    task->state = state;
+    task_t *current = running_task();
+    if (current == task)
+    {
+        schedule();
+    }
+}
+
+void task_unblock(task_t *task)
+{
+    assert(!get_interrupt_state());
+    list_remove(&task->node);
+    assert(task->node.next == NULL);
+    assert(task->node.prev == NULL);
+    task->state = TASK_READY;
 }
 
 //当前正在运行的任务
@@ -119,7 +157,7 @@ u32 thread_a()
     while (true)
     {
         printk("A");
-        yield();
+        test();
     }
 }
 
@@ -130,7 +168,7 @@ u32 thread_b()
     while (true)
     {
         printk("B");
-        yield();
+        test();
     }
 }
 
@@ -140,7 +178,7 @@ u32 thread_c()
     while (true)
     {
         printk("C");
-        yield();
+        test();
     }
 }
 
@@ -155,6 +193,7 @@ static void task_setup()
 
 void task_init()
 {
+    list_init(&block_list);
     task_setup();
 
     task_create(thread_a, "a", 5, KERNEL_USER);

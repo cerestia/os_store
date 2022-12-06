@@ -27,7 +27,5 @@ void kernel_init()
     clock_init();
     task_init();
     syscall_init();
-    // set_interrupt_state(true);
-    list_test();
-    // hang();
+    set_interrupt_state(true);
 }

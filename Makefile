@@ -78,7 +78,7 @@ test:$(BUILD)/master.img
 .PHONY:clean
 clean:
 	rm -rf $(BUILD)/boot/*
-	rm -rf $(BUILD)/kernrl/*
+	rm -rf $(BUILD)/kernel/*
 	rm -rf $(BUILD)/lib/*
 
 

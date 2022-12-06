@@ -2,6 +2,7 @@
 #include <onix/string.h>
 #include <onix/onix.h>
 #include <onix/assert.h>
+#include <onix/memory.h>
 
 void bitmap_make(bitmap_t *map, char *bits, u32 length, u32 offset)
 {
