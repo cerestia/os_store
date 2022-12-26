@@ -14,7 +14,7 @@ extern void task_switch(task_t *next);
 
 #define NR_TASKS 64
 static task_t *task_table[NR_TASKS];
-static list_t block_list; //任务默认阻塞队列
+static list_t block_list; // 任务默认阻塞队列
 static task_t *idle_task;
 
 static task_t *get_free_task()
@@ -91,7 +91,7 @@ void task_unblock(task_t *task)
     task->state = TASK_READY;
 }
 
-//当前正在运行的任务
+// 当前正在运行的任务
 task_t *running_task()
 {
     asm volatile(
@@ -150,38 +150,6 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     return task;
 }
 
-u32 thread_a()
-{
-    // BMB;
-    set_interrupt_state(true);
-    while (true)
-    {
-        printk("A");
-        test();
-    }
-}
-
-u32 thread_b()
-{
-    // BMB;
-    set_interrupt_state(true);
-    while (true)
-    {
-        printk("B");
-        test();
-    }
-}
-
-u32 thread_c()
-{
-    set_interrupt_state(true);
-    while (true)
-    {
-        printk("C");
-        test();
-    }
-}
-
 static void task_setup()
 {
     task_t *task = running_task();
@@ -191,12 +159,14 @@ static void task_setup()
     memset(task_table, 0, sizeof(task_table));
 }
 
+extern void init_thread();
+extern void idle_thread();
+
 void task_init()
 {
     list_init(&block_list);
     task_setup();
 
-    task_create(thread_a, "a", 5, KERNEL_USER);
-    task_create(thread_b, "b", 5, KERNEL_USER);
-    task_create(thread_c, "c", 5, KERNEL_USER);
+    idle_task = task_create(idle_thread, "idle", 1, KERNEL_USER);
+    task_create(init_thread, "init", 5, NORMAL_USER);
 }

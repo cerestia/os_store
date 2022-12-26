@@ -53,7 +53,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/kernel/bitmap.o \
 	$(BUILD)/kernel/gate.o \
 	$(BUILD)/lib/syscall.o \
-	$(BUILD)/lib/list.o
+	$(BUILD)/lib/list.o \
+	$(BUILD)/kernel/thread.o
 
 	$(shell mkdir -p $(dir $@))
 	ld -m elf_i386 -static $^ -o $@ -Ttext $(ENTRYPOINT)
@@ -80,7 +81,9 @@ clean:
 	rm -rf $(BUILD)/boot/*
 	rm -rf $(BUILD)/kernel/*
 	rm -rf $(BUILD)/lib/*
-
+	rm $(BUILD)/system.map
+	rm $(BUILD)/system.bin
+	rm $(BUILD)/kernel.bin
 
 .PHONY: bochs
 	bochs: $(BUILD)/master.img
