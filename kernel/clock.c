@@ -40,12 +40,12 @@ void stop_beep()
     }
 }
 
-
 u32 clock_handler(int vector)
 {
     assert(vector == 0x20);
     send_eoi(vector);
     stop_beep();
+    task_wakeup(); // 唤醒睡眠进程
     jiffies++;
     task_t *task = running_task();
     assert(task->magic == ONIX_MAGIC);

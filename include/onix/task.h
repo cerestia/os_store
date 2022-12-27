@@ -9,7 +9,7 @@
 
 #define TASK_NAME_LEN 16
 
-typedef u32 target_t();
+typedef void target_t();
 
 typedef enum task_state_t
 {
@@ -25,14 +25,14 @@ typedef enum task_state_t
 typedef struct task_t
 {
     u32 *stack;
-    list_node_t node; //任务阻塞节点
+    list_node_t node; // 任务阻塞节点
     task_state_t state;
     u32 priority;
-    u32 ticks;   //剩余时间片
-    u32 jiffies; //上次执行全局时间片
+    u32 ticks;   // 剩余时间片
+    u32 jiffies; // 上次执行全局时间片
     char name[TASK_NAME_LEN];
     u32 uid;
-    u32 pde; //页目录物理地址
+    u32 pde; // 页目录物理地址
     struct bitmap_t *vmap;
     u32 magic;
 } task_t;
@@ -52,5 +52,8 @@ void schedule();
 void task_yield();
 void task_block(task_t *task, list_t *blist, task_state_t state);
 void task_unblock(task_t *task);
+
+void task_sleep(u32 ms);
+void task_wakeup();
 
 #endif

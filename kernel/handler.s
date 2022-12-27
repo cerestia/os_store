@@ -178,7 +178,7 @@ syscall_handler:
     pusha
 
     push interrupt_handler_0x08
-    xchg bx,bx
+    ;xchg bx,bx
 
     push edx; 第三个参数
     push ecx; 第二个参数
