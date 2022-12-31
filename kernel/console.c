@@ -39,7 +39,7 @@ static u32 x, y; // 当前光标的坐标
 static u8 attr = 7;        // 字符样式
 static u16 erase = 0x0720; // 空格
 
-//获得当前显示器的开始位置
+// 获得当前显示器的开始位置
 static void get_screen()
 {
     outb(CRT_ADDR_REG, CRT_CURSOR_H);
@@ -51,7 +51,7 @@ static void get_screen()
     screen += MEM_BASE;
 }
 
-//设置显示器开始位置
+// 设置显示器开始位置
 static void set_screen()
 {
     outb(CRT_ADDR_REG, CRT_START_ADDR_H);
@@ -155,7 +155,7 @@ extern void start_beep();
 
 void console_write(char *buf, u32 count)
 {
-    bool intr = interrupt_disable();
+    // bool intr = interrupt_disable();
 
     char ch;
     char *ptr = (char *)pos;
@@ -207,7 +207,7 @@ void console_write(char *buf, u32 count)
         }
     }
     set_cursor();
-    set_interrupt_state(intr);
+    // set_interrupt_state(intr);
 }
 
 void console_init()
