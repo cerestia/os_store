@@ -30,6 +30,7 @@ void init_thread()
     {
         spin_lock(&lock);
         LOGK("init task...\n", counter++);
+        sleep(500);
         spin_unlock(&lock);
     }
 }
@@ -43,6 +44,7 @@ void test_thread()
     {
         spin_lock(&lock);
         LOGK("test task ...%d\n", counter++);
+        sleep(100);
         spin_unlock(&lock);
     }
 }

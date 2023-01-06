@@ -5,15 +5,16 @@
 #include <onix/stdlib.h>
 #include <onix/string.h>
 #include <onix/bitmap.h>
+#include <onix/multiboot.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
 #define ZONE_VALID 1    // ards可用内存区域
 #define ZONE_RESERVED 2 // args 不可以区域
 
-#define IDX(addr) ((u32)addr >> 12)            //获取addr 页索引
+#define IDX(addr) ((u32)addr >> 12)            // 获取addr 页索引
 #define DIDX(addr) (((u32)addr >> 22) & 0x3ff) // 获取页目录表索引
-#define TIDX(addr) (((u32)addr >> 12) & 0x3ff) //获取 addr 的页表索引
+#define TIDX(addr) (((u32)addr >> 12) & 0x3ff) // 获取 addr 的页表索引
 #define PAGE(idx) ((u32)idx << 12)             // 获取页索引 idx 对应的页开始的位置
 #define ASSERT_PAGE(addr) assert((addr & 0xfff) == 0)
 
@@ -22,7 +23,7 @@
 
 bitmap_t kernel_map;
 
-//内核页表索引
+// 内核页表索引
 static u32 KERNEL_PAGE_TABLE[] = {
     KERNEL_PAGE_DIR + 1 * PAGE_SIZE,
     KERNEL_PAGE_DIR + 2 * PAGE_SIZE,
@@ -37,20 +38,19 @@ typedef struct ards_t
     u32 type;
 } _packed ards_t;
 
-static u32 memory_base = 0; //可用内存基地址，应该等于 1M
+static u32 memory_base = 0; // 可用内存基地址，应该等于 1M
 static u32 memory_size = 0;
 static u32 total_pages = 0;
 static u32 free_pages = 0;
 
 void memory_init(u32 magic, u32 addr)
 {
-    u32 count;
-    ards_t *ptr;
+    u32 count = 0;
 
     if (magic == ONIX_MAGIC)
     {
         count = *(u32 *)addr;
-        ptr = (ards_t *)(addr + 4);
+        ards_t *ptr = (ards_t *)(addr + 4);
         for (size_t i = 0; i < count; i++, ptr++)
         {
             LOGK("Memory base 0x%p size 0x%p type %d\n",
@@ -60,6 +60,36 @@ void memory_init(u32 magic, u32 addr)
                 memory_base = (u32)ptr->base;
                 memory_size = (u32)ptr->size;
             }
+        }
+    }
+    else if (magic == MULTIBOOT2_MAGIC)
+    {
+        u32 size = *(unsigned int *)addr;
+        multi_tag_t *tag = (multi_tag_t *)(addr + 8);
+
+        LOGK("Announced mbi size 0x%x\n", size);
+        while (tag->type != MULTIBOOT_TAG_TYPE_END)
+        {
+            if (tag->type == MULTIBOOT_TAG_TYPE_MMAP)
+                break;
+            // 下一个 tag 对齐到了 8 字节
+            tag = (multi_tag_t *)((u32)tag + ((tag->size + 7) & ~7));
+        }
+
+        multi_tag_mmap_t *mtag = (multi_tag_mmap_t *)tag;
+        multi_mmap_entry_t *entry = mtag->entries;
+
+        while ((u32)entry < (u32)tag + tag->size)
+        {
+            LOGK("Memory base 0x%p size 0x%p type %d\n",
+                 (u32)entry->addr, (u32)entry->len, (u32)entry->type);
+            count++;
+            if (entry->type == ZONE_VALID && entry->len > memory_size)
+            {
+                memory_base = (u32)entry->addr;
+                memory_size = (u32)entry->len;
+            }
+            entry = (multi_mmap_entry_t *)((u32)entry + mtag->entry_size);
         }
     }
     else
@@ -138,7 +168,7 @@ static void put_page(u32 addr)
     u32 idx = IDX(addr);
 
     assert(idx >= start_page & idx < total_pages);
-    //只有一个引用
+    // 只有一个引用
     assert(memory_map[idx] >= 1);
 
     memory_map[idx]--;
@@ -198,7 +228,7 @@ void mapping_init()
 
         for (idx_t tidx = 0; tidx < 1024; tidx++, index++)
         {
-            //第0页不映射，解决空指针访问
+            // 第0页不映射，解决空指针访问
             if (index == 0)
             {
                 continue;

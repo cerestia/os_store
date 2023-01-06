@@ -113,7 +113,7 @@ protect_mode:
     mov ebx,ards_count
 
     ;xchg bx,bx
-    jmp dword code_selector:0x10000
+    jmp dword code_selector:0x10040
 
     ud2;
     jmp $
