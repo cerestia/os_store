@@ -56,14 +56,14 @@ void mutex_unlock(mutex_t *mutex)
     set_interrupt_state(intr);
 }
 
-void spin_init(spinlock_t *lock)
+void lock_init(lock_t *lock)
 {
     lock->holder = NULL;
     lock->repeat = 0;
     mutex_init(&lock->mutex);
 }
 
-void spin_lock(spinlock_t *lock)
+void lock_acquire(lock_t *lock)
 {
     task_t *current = running_task();
     if (lock->holder != current)
@@ -79,7 +79,7 @@ void spin_lock(spinlock_t *lock)
     }
 }
 
-void spin_unlock(spinlock_t *lock)
+void lock_release(lock_t *lock)
 {
     task_t *current = running_task();
     assert(lock->holder == current);
