@@ -15,6 +15,7 @@ extern void memory_test();
 extern void task_init();
 extern void set_interrupt_state();
 extern void syscall_init();
+extern void keyboard_init();
 
 char message[] = "hello onix!";
 char buf[1024];
@@ -25,6 +26,8 @@ void kernel_init()
     mapping_init();
     interrupt_init();
     clock_init();
+    keyboard_init();
+
     task_init();
     syscall_init();
     set_interrupt_state(true);

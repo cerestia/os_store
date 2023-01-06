@@ -33,9 +33,9 @@ _start:
     push ebx ;ards_count
     push eax;magic
     call console_init;
-    xchg bx,bx
+    
     call gdt_init
-    xchg bx,bx
+    
     lgdt [gdt_ptr]
 
     jmp dword code_selector:_next
