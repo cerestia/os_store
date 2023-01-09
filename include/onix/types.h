@@ -28,7 +28,7 @@
 #endif /* __cplusplus */
 
 #define _packed __attribute__((packed)) // 用于定义特殊的结构体
-//省略栈帧
+// 省略栈帧
 #define _ofp __attribute__((optimize("omit-frame-pointer")))
 
 #define _inline __attribute__((always_inline)) inline
@@ -47,4 +47,13 @@ typedef unsigned long long u64;
 
 typedef u32 time_t;
 typedef u32 idx_t;
+
+typedef int32 fd_t;
+typedef enum std_fd_t
+{
+    stdin,
+    stdout,
+    stderr,
+} std_fd_t;
+
 #endif

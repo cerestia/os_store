@@ -3,6 +3,7 @@
 #include "onix/debug.h"
 #include <onix/printk.h>
 #include <onix/task.h>
+#include <onix/stdio.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -34,7 +35,8 @@ static void real_init_thread()
     while (true)
     {
         // asm volatile("in $0x92, %ax\n");
-        sleep(100);
+        sleep(500);
+        printf("task is in user mode %d\n", counter++);
     }
 }
 
