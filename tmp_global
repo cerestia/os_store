@@ -1,0 +1,363 @@
+
+build/kernel/global.o:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00000000 <descriptor_init>:
+descriptor_t gdt[GDT_SIZE];
+pointer_t gdt_ptr;
+tss_t tss; // 任务状态段
+
+void descriptor_init(descriptor_t *desc, u32 base, u32 limit)
+{
+   0:	55                   	push   ebp
+   1:	89 e5                	mov    ebp,esp
+   3:	53                   	push   ebx
+    desc->base_low = base & 0xffffff;
+   4:	8b 45 0c             	mov    eax,DWORD PTR [ebp+0xc]
+   7:	25 ff ff ff 00       	and    eax,0xffffff
+   c:	89 c2                	mov    edx,eax
+   e:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  11:	0f b6 da             	movzx  ebx,dl
+  14:	0f b6 48 02          	movzx  ecx,BYTE PTR [eax+0x2]
+  18:	83 e1 00             	and    ecx,0x0
+  1b:	09 d9                	or     ecx,ebx
+  1d:	88 48 02             	mov    BYTE PTR [eax+0x2],cl
+  20:	89 d1                	mov    ecx,edx
+  22:	c1 e9 08             	shr    ecx,0x8
+  25:	0f b6 d9             	movzx  ebx,cl
+  28:	0f b6 48 03          	movzx  ecx,BYTE PTR [eax+0x3]
+  2c:	83 e1 00             	and    ecx,0x0
+  2f:	09 d9                	or     ecx,ebx
+  31:	88 48 03             	mov    BYTE PTR [eax+0x3],cl
+  34:	c1 ea 10             	shr    edx,0x10
+  37:	0f b6 ca             	movzx  ecx,dl
+  3a:	0f b6 50 04          	movzx  edx,BYTE PTR [eax+0x4]
+  3e:	83 e2 00             	and    edx,0x0
+  41:	09 ca                	or     edx,ecx
+  43:	88 50 04             	mov    BYTE PTR [eax+0x4],dl
+    desc->base_high = (base >> 24) & 0xff;
+  46:	8b 45 0c             	mov    eax,DWORD PTR [ebp+0xc]
+  49:	c1 e8 18             	shr    eax,0x18
+  4c:	89 c2                	mov    edx,eax
+  4e:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  51:	88 50 07             	mov    BYTE PTR [eax+0x7],dl
+    desc->limit_low = limit & 0xffff;
+  54:	8b 45 10             	mov    eax,DWORD PTR [ebp+0x10]
+  57:	89 c2                	mov    edx,eax
+  59:	8b 45 08             	mov    eax,DWORD PTR [ebp+0x8]
+  5c:	66 89 10             	mov    WORD PTR [eax],dx
+    desc->limit_high = (limit >> 16) & 0xf;
+  5f:	8b 45 10             	mov    eax,DWORD PTR [ebp+0x10]
+  62:	c1 e8 10             	shr    eax,0x10
+  65:	83 e0 0f             	and    eax,0xf
+  68:	8b 55 08             	mov    edx,DWORD PTR [ebp+0x8]
+  6b:	83 e0 0f             	and    eax,0xf
+  6e:	89 c1                	mov    ecx,eax
+  70:	0f b6 42 06          	movzx  eax,BYTE PTR [edx+0x6]
+  74:	83 e0 f0             	and    eax,0xfffffff0
+  77:	09 c8                	or     eax,ecx
+  79:	88 42 06             	mov    BYTE PTR [edx+0x6],al
+}
+  7c:	90                   	nop
+  7d:	8b 5d fc             	mov    ebx,DWORD PTR [ebp-0x4]
+  80:	c9                   	leave  
+  81:	c3                   	ret    
+
+00000082 <tss_init>:
+
+void tss_init()
+{
+  82:	55                   	push   ebp
+  83:	89 e5                	mov    ebp,esp
+  85:	83 ec 18             	sub    esp,0x18
+    memset(&tss, 0, sizeof(tss));
+  88:	83 ec 04             	sub    esp,0x4
+  8b:	6a 6c                	push   0x6c
+  8d:	6a 00                	push   0x0
+  8f:	68 00 00 00 00       	push   0x0
+  94:	e8 fc ff ff ff       	call   95 <tss_init+0x13>
+  99:	83 c4 10             	add    esp,0x10
+
+    tss.ss0 = KERNEL_DATA_SELECTOR;
+  9c:	c7 05 08 00 00 00 10 	mov    DWORD PTR ds:0x8,0x10
+  a3:	00 00 00 
+    tss.iobase = sizeof(tss);
+  a6:	66 c7 05 66 00 00 00 	mov    WORD PTR ds:0x66,0x6c
+  ad:	6c 00 
+
+    descriptor_t *desc = gdt + KERNEL_TSS_IDX;
+  af:	c7 45 f4 18 00 00 00 	mov    DWORD PTR [ebp-0xc],0x18
+    descriptor_init(desc, (u32)&tss, sizeof(tss) - 1);
+  b6:	b8 00 00 00 00       	mov    eax,0x0
+  bb:	83 ec 04             	sub    esp,0x4
+  be:	6a 6b                	push   0x6b
+  c0:	50                   	push   eax
+  c1:	ff 75 f4             	push   DWORD PTR [ebp-0xc]
+  c4:	e8 fc ff ff ff       	call   c5 <tss_init+0x43>
+  c9:	83 c4 10             	add    esp,0x10
+    desc->segment = 0;     // 系统段
+  cc:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+  cf:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+  d3:	83 e2 ef             	and    edx,0xffffffef
+  d6:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->granularity = 0; // 字节
+  d9:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+  dc:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+  e0:	83 e2 7f             	and    edx,0x7f
+  e3:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->big = 0;         // 固定为 0
+  e6:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+  e9:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+  ed:	83 e2 bf             	and    edx,0xffffffbf
+  f0:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->long_mode = 0;   // 固定为 0
+  f3:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+  f6:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+  fa:	83 e2 df             	and    edx,0xffffffdf
+  fd:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->present = 1;     // 在内存中
+ 100:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 103:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 107:	83 ca 80             	or     edx,0xffffff80
+ 10a:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->DPL = 0;         // 用于任务门或调用门
+ 10d:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 110:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 114:	83 e2 9f             	and    edx,0xffffff9f
+ 117:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->type = 0b1001;   // 32 位可用 tss
+ 11a:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 11d:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 121:	83 e2 f0             	and    edx,0xfffffff0
+ 124:	83 ca 09             	or     edx,0x9
+ 127:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+
+    BMB;
+ 12a:	66 87 db             	xchg   bx,bx
+    asm volatile(
+ 12d:	b8 18 00 00 00       	mov    eax,0x18
+ 132:	0f 00 d8             	ltr    ax
+        "ltr %%ax\n" ::"a"(KERNEL_TSS_SELECTOR));
+}
+ 135:	90                   	nop
+ 136:	c9                   	leave  
+ 137:	c3                   	ret    
+
+00000138 <gdt_init>:
+
+void gdt_init()
+{
+ 138:	55                   	push   ebp
+ 139:	89 e5                	mov    ebp,esp
+ 13b:	83 ec 18             	sub    esp,0x18
+    DEBUGK("init gdt_ptr\n");
+ 13e:	83 ec 04             	sub    esp,0x4
+ 141:	68 00 00 00 00       	push   0x0
+ 146:	6a 29                	push   0x29
+ 148:	68 0e 00 00 00       	push   0xe
+ 14d:	e8 fc ff ff ff       	call   14e <gdt_init+0x16>
+ 152:	83 c4 10             	add    esp,0x10
+
+    memset(gdt, 0, sizeof(gdt));
+ 155:	83 ec 04             	sub    esp,0x4
+ 158:	68 00 04 00 00       	push   0x400
+ 15d:	6a 00                	push   0x0
+ 15f:	68 00 00 00 00       	push   0x0
+ 164:	e8 fc ff ff ff       	call   165 <gdt_init+0x2d>
+ 169:	83 c4 10             	add    esp,0x10
+    descriptor_t *desc;
+    desc = gdt + KERNEL_CODE_IDX;
+ 16c:	c7 45 f4 08 00 00 00 	mov    DWORD PTR [ebp-0xc],0x8
+    descriptor_init(desc, 0, 0xFFFFF);
+ 173:	83 ec 04             	sub    esp,0x4
+ 176:	68 ff ff 0f 00       	push   0xfffff
+ 17b:	6a 00                	push   0x0
+ 17d:	ff 75 f4             	push   DWORD PTR [ebp-0xc]
+ 180:	e8 fc ff ff ff       	call   181 <gdt_init+0x49>
+ 185:	83 c4 10             	add    esp,0x10
+    desc->segment = 1;     // 代码段
+ 188:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 18b:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 18f:	83 ca 10             	or     edx,0x10
+ 192:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->granularity = 1; // 4K
+ 195:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 198:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 19c:	83 ca 80             	or     edx,0xffffff80
+ 19f:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->big = 1;         // 32 位
+ 1a2:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 1a5:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 1a9:	83 ca 40             	or     edx,0x40
+ 1ac:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->long_mode = 0;   // 不是 64 位
+ 1af:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 1b2:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 1b6:	83 e2 df             	and    edx,0xffffffdf
+ 1b9:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->present = 1;     // 在内存中
+ 1bc:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 1bf:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 1c3:	83 ca 80             	or     edx,0xffffff80
+ 1c6:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->DPL = 0;         // 内核特权级
+ 1c9:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 1cc:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 1d0:	83 e2 9f             	and    edx,0xffffff9f
+ 1d3:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->type = 0b1010;   // 代码 / 非依从 / 可读 / 没有被访问过
+ 1d6:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 1d9:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 1dd:	83 e2 f0             	and    edx,0xfffffff0
+ 1e0:	83 ca 0a             	or     edx,0xa
+ 1e3:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+
+    desc = gdt + KERNEL_DATA_IDX;
+ 1e6:	c7 45 f4 10 00 00 00 	mov    DWORD PTR [ebp-0xc],0x10
+    descriptor_init(desc, 0, 0xFFFFF);
+ 1ed:	83 ec 04             	sub    esp,0x4
+ 1f0:	68 ff ff 0f 00       	push   0xfffff
+ 1f5:	6a 00                	push   0x0
+ 1f7:	ff 75 f4             	push   DWORD PTR [ebp-0xc]
+ 1fa:	e8 fc ff ff ff       	call   1fb <gdt_init+0xc3>
+ 1ff:	83 c4 10             	add    esp,0x10
+    desc->segment = 1;     // 数据段
+ 202:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 205:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 209:	83 ca 10             	or     edx,0x10
+ 20c:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->granularity = 1; // 4K
+ 20f:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 212:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 216:	83 ca 80             	or     edx,0xffffff80
+ 219:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->big = 1;         // 32 位
+ 21c:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 21f:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 223:	83 ca 40             	or     edx,0x40
+ 226:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->long_mode = 0;   // 不是 64 位
+ 229:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 22c:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 230:	83 e2 df             	and    edx,0xffffffdf
+ 233:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->present = 1;     // 在内存中
+ 236:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 239:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 23d:	83 ca 80             	or     edx,0xffffff80
+ 240:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->DPL = 0;         // 内核特权级
+ 243:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 246:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 24a:	83 e2 9f             	and    edx,0xffffff9f
+ 24d:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->type = 0b0010;   // 数据 / 向上增长 / 可写 / 没有被访问过
+ 250:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 253:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 257:	83 e2 f0             	and    edx,0xfffffff0
+ 25a:	83 ca 02             	or     edx,0x2
+ 25d:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+
+    desc = gdt + USER_CODE_IDX;
+ 260:	c7 45 f4 20 00 00 00 	mov    DWORD PTR [ebp-0xc],0x20
+    descriptor_init(desc, 0, 0xFFFFF);
+ 267:	83 ec 04             	sub    esp,0x4
+ 26a:	68 ff ff 0f 00       	push   0xfffff
+ 26f:	6a 00                	push   0x0
+ 271:	ff 75 f4             	push   DWORD PTR [ebp-0xc]
+ 274:	e8 fc ff ff ff       	call   275 <gdt_init+0x13d>
+ 279:	83 c4 10             	add    esp,0x10
+    desc->segment = 1;     // 代码段
+ 27c:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 27f:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 283:	83 ca 10             	or     edx,0x10
+ 286:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->granularity = 1; // 4K
+ 289:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 28c:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 290:	83 ca 80             	or     edx,0xffffff80
+ 293:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->big = 1;         // 32 位
+ 296:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 299:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 29d:	83 ca 40             	or     edx,0x40
+ 2a0:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->long_mode = 0;   // 不是 64 位
+ 2a3:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 2a6:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 2aa:	83 e2 df             	and    edx,0xffffffdf
+ 2ad:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->present = 1;     // 在内存中
+ 2b0:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 2b3:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 2b7:	83 ca 80             	or     edx,0xffffff80
+ 2ba:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->DPL = 3;         // 用户特权级
+ 2bd:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 2c0:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 2c4:	83 ca 60             	or     edx,0x60
+ 2c7:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->type = 0b1010;   // 代码 / 非依从 / 可读 / 没有被访问过
+ 2ca:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 2cd:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 2d1:	83 e2 f0             	and    edx,0xfffffff0
+ 2d4:	83 ca 0a             	or     edx,0xa
+ 2d7:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+
+    desc = gdt + USER_DATA_IDX;
+ 2da:	c7 45 f4 28 00 00 00 	mov    DWORD PTR [ebp-0xc],0x28
+    descriptor_init(desc, 0, 0xFFFFF);
+ 2e1:	83 ec 04             	sub    esp,0x4
+ 2e4:	68 ff ff 0f 00       	push   0xfffff
+ 2e9:	6a 00                	push   0x0
+ 2eb:	ff 75 f4             	push   DWORD PTR [ebp-0xc]
+ 2ee:	e8 fc ff ff ff       	call   2ef <gdt_init+0x1b7>
+ 2f3:	83 c4 10             	add    esp,0x10
+    desc->segment = 1;     // 数据段
+ 2f6:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 2f9:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 2fd:	83 ca 10             	or     edx,0x10
+ 300:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->granularity = 1; // 4K
+ 303:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 306:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 30a:	83 ca 80             	or     edx,0xffffff80
+ 30d:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->big = 1;         // 32 位
+ 310:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 313:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 317:	83 ca 40             	or     edx,0x40
+ 31a:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->long_mode = 0;   // 不是 64 位
+ 31d:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 320:	0f b6 50 06          	movzx  edx,BYTE PTR [eax+0x6]
+ 324:	83 e2 df             	and    edx,0xffffffdf
+ 327:	88 50 06             	mov    BYTE PTR [eax+0x6],dl
+    desc->present = 1;     // 在内存中
+ 32a:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 32d:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 331:	83 ca 80             	or     edx,0xffffff80
+ 334:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->DPL = 3;         // 用户特权级
+ 337:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 33a:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 33e:	83 ca 60             	or     edx,0x60
+ 341:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+    desc->type = 0b0010;   // 数据 / 向上增长 / 可写 / 没有被访问过
+ 344:	8b 45 f4             	mov    eax,DWORD PTR [ebp-0xc]
+ 347:	0f b6 50 05          	movzx  edx,BYTE PTR [eax+0x5]
+ 34b:	83 e2 f0             	and    edx,0xfffffff0
+ 34e:	83 ca 02             	or     edx,0x2
+ 351:	88 50 05             	mov    BYTE PTR [eax+0x5],dl
+
+    gdt_ptr.base = (u32)&gdt;
+ 354:	b8 00 00 00 00       	mov    eax,0x0
+ 359:	a3 02 00 00 00       	mov    ds:0x2,eax
+    gdt_ptr.limit = sizeof(gdt) - 1;
+ 35e:	66 c7 05 00 00 00 00 	mov    WORD PTR ds:0x0,0x3ff
+ 365:	ff 03 
+ 367:	90                   	nop
+ 368:	c9                   	leave  
+ 369:	c3                   	ret    

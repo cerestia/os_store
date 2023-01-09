@@ -1,4 +1,5 @@
 #include <onix/syscall.h>
+#include <onix/debug.h>
 
 static _inline u32 _syscall0(u32 nr)
 {
@@ -13,6 +14,7 @@ static _inline u32 _syscall0(u32 nr)
 static _inline u32 _syscall1(u32 nr, u32 arg)
 {
     u32 ret;
+    BMB;
     asm volatile(
         "int $0x80\n"
         : "=a"(ret)

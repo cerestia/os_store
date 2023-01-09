@@ -2,6 +2,7 @@
 #include "onix/syscall.h"
 #include "onix/debug.h"
 #include <onix/printk.h>
+#include <onix/task.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -25,21 +26,23 @@ extern u32 keyboard_read(char *buf, u32 count);
 
 lock_t lock;
 
-void init_thread()
+static void real_init_thread()
 {
-    set_interrupt_state(true);
     u32 counter = 0;
+
     char ch;
     while (true)
     {
-        bool intr = interrupt_disable();
-        keyboard_read(&ch, 1);
-        // LOGK("%c\n", ch);
-        printk("%c", ch);
-
-        set_interrupt_state(intr);
-        // sleep(500);
+        // asm volatile("in $0x92, %ax\n");
+        sleep(100);
     }
+}
+
+void init_thread()
+{
+
+    char temp[100]; // 为了给栈留空间
+    intr_to_user_mode(real_init_thread);
 }
 
 void test_thread()

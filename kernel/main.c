@@ -16,12 +16,14 @@ extern void task_init();
 extern void set_interrupt_state();
 extern void syscall_init();
 extern void keyboard_init();
+extern void tss_init();
 
 char message[] = "hello onix!";
 char buf[1024];
 
 void kernel_init()
 {
+    tss_init();
     memory_map_init();
     mapping_init();
     interrupt_init();

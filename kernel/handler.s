@@ -30,7 +30,7 @@ interrupt_entry:
 
 global interrupt_exit
 interrupt_exit:
-
+    
     ;平衡栈
     add esp,4
 
@@ -162,7 +162,6 @@ section .text
     extern syscall_handler
 
 syscall_handler:
-    xchg bx,bx
     ;验证是否是系统调用
     push eax
     call syscall_check
@@ -177,7 +176,7 @@ syscall_handler:
     push gs
     pusha
 
-    push interrupt_handler_0x08
+    push interrupt_handler_0x80
     ;xchg bx,bx
 
     push edx; 第三个参数
@@ -187,8 +186,6 @@ syscall_handler:
     ; 调用系统调用处理函数，syscall_table 中存储了系统调用处理函数的指针
     call [syscall_table + eax * 4]
 
-
-    xchg bx,bx
     add esp,12 ;系统调用结束恢复
 
     mov dword [esp+ 8*4], eax
