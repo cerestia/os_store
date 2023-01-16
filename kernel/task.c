@@ -9,6 +9,8 @@
 #include <onix/syscall.h>
 #include <onix/list.h>
 #include <onix/global.h>
+#include <onix/task.h>
+#include <onix/arena.h>
 
 extern bitmap_t kernel_map;
 extern void task_switch(task_t *next);
@@ -159,6 +161,12 @@ void task_activate(task_t *task)
 {
     assert(task->magic == ONIX_MAGIC);
 
+    if (task->pde != get_cr3())
+    {
+        set_cr3(task->pde);
+        // BMB;
+    }
+
     if (task->uid != KERNEL_USER)
     {
         tss.esp0 = (u32)task + PAGE_SIZE;
@@ -228,9 +236,17 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
 
 // 调用该函数的地方不能有任何局部变量
 // 调用前栈顶需要准备足够的空间
-void intr_to_user_mode(target_t target)
+void task_to_user_mode(target_t target)
 {
     task_t *task = running_task();
+
+    task->vmap = kmalloc(sizeof(bitmap_t)); // todo kfree
+    void *buf = (void *)alloc_kpage(1);     // todo free_kpage
+    bitmap_init(task->vmap, buf, PAGE_SIZE, KERNEL_MEMORY_SIZE / PAGE_SIZE);
+
+    // 创建用户进程页表
+    task->pde = (u32)copy_pde();
+    set_cr3(task->pde);
 
     u32 addr = (u32)task + PAGE_SIZE;
     addr -= sizeof(intr_frame_t);
@@ -255,11 +271,9 @@ void intr_to_user_mode(target_t target)
 
     iframe->error = ONIX_MAGIC;
 
-    u32 stack = alloc_kpage(1);
-
     iframe->eip = (u32)target;
     iframe->eflags = (0 << 12 | 0b10 | 1 << 9);
-    iframe->esp = stack + PAGE_SIZE; // todo replace to user stack
+    iframe->esp = USER_STACK_TOP;
 
     asm volatile(
         "movl %0,%%esp\n"

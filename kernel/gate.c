@@ -4,6 +4,7 @@
 #include <onix/syscall.h>
 #include <onix/task.h>
 #include <onix/console.h>
+#include <onix/memory.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -27,17 +28,7 @@ static task_t *task = NULL;
 
 static u32 sys_test()
 {
-    // LOGK("syscall test...\n");
-    if (!task)
-    {
-        task = running_task();
-        task_block(task, NULL, TASK_BLOCKED);
-    }
-    else
-    {
-        task_unblock(task);
-        task = NULL;
-    }
+
     return 255;
 }
 

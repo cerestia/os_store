@@ -21,6 +21,7 @@ pointer_t idt_ptr;
 handler_t handler_table[IDT_SIZE];
 extern handler_t handler_entry_table[ENTRY_SIZE];
 extern void syscall_handler();
+extern void page_fault();
 
 static char *messages[] = {
     "#DE Divide Error\0",
@@ -70,12 +71,12 @@ void set_interrupt_mask(u32 irq, bool enable)
 {
     assert(irq >= 0 && irq < 16);
     u16 port;
-    //主片
+    // 主片
     if (irq < 8)
     {
         port = PIC_M_DATA;
     }
-    //从片
+    // 从片
     else
     {
         port = PIC_S_DATA;
@@ -149,18 +150,21 @@ void idt_init()
 
         gate->offset0 = (u32)handler & 0xffff;
         gate->offset1 = ((u32)handler >> 16) & 0xffff;
-        gate->selector = 1 << 3; //代码段
+        gate->selector = 1 << 3; // 代码段
         gate->reserved = 0;      //
-        gate->type = 0b1110;     //中断门
-        gate->segment = 0;       //系统段
-        gate->DPL = 0;           //内核态
-        gate->present = 1;       //有效
+        gate->type = 0b1110;     // 中断门
+        gate->segment = 0;       // 系统段
+        gate->DPL = 0;           // 内核态
+        gate->present = 1;       // 有效
     }
 
     for (size_t i = 0; i < 0x20; i++)
     {
         handler_table[i] = exception_handler;
     }
+
+    handler_table[0xe] = page_fault;
+
     for (size_t i = 0x20; i < ENTRY_SIZE; i++)
     {
         handler_table[i] = default_handler;

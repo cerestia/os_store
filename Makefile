@@ -65,7 +65,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/kernel/mutex.o \
 	$(BUILD)/kernel/keyboard.o \
 	$(BUILD)/lib/fifo.o \
-	$(BUILD)/lib/printf.o
+	$(BUILD)/lib/printf.o \
+	$(BUILD)/kernel/arena.o
 
 	$(shell mkdir -p $(dir $@))
 	ld ${LDFLAGS}  $^ -o $@

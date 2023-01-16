@@ -4,6 +4,8 @@
 #include <onix/printk.h>
 #include <onix/task.h>
 #include <onix/stdio.h>
+#include <onix/arena.h>
+#include <onix/stdio.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -27,7 +29,13 @@ extern u32 keyboard_read(char *buf, u32 count);
 
 lock_t lock;
 
-static void real_init_thread()
+void test_recursion()
+{
+    char tmp[0x400];
+    test_recursion();
+}
+
+static void user_init_thread()
 {
     u32 counter = 0;
 
@@ -35,8 +43,10 @@ static void real_init_thread()
     while (true)
     {
         // asm volatile("in $0x92, %ax\n");
-        sleep(500);
         printf("task is in user mode %d\n", counter++);
+        BMB;
+        test_recursion();
+        sleep(500);
     }
 }
 
@@ -44,7 +54,7 @@ void init_thread()
 {
 
     char temp[100]; // 为了给栈留空间
-    intr_to_user_mode(real_init_thread);
+    task_to_user_mode(user_init_thread);
 }
 
 void test_thread()
@@ -54,7 +64,8 @@ void test_thread()
 
     while (true)
     {
-        // LOGK("test task ...%d\n", counter++);
-        sleep(700);
+        LOGK("test task %d....\n", counter++);
+        BMB;
+        sleep(5000);
     }
 }

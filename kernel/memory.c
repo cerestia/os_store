@@ -6,6 +6,7 @@
 #include <onix/string.h>
 #include <onix/bitmap.h>
 #include <onix/multiboot.h>
+#include <onix/task.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -21,6 +22,8 @@
 #define KERNEL_MAP_BITS 0x4000
 #define KERNEL_PAGE_DIR 0x1000
 
+#define PDE_MASK 0xFFC00000
+
 bitmap_t kernel_map;
 
 // 内核页表索引
@@ -29,7 +32,7 @@ static u32 KERNEL_PAGE_TABLE[] = {
     KERNEL_PAGE_DIR + 2 * PAGE_SIZE,
 };
 
-#define KERNEL_MEMORY_SIZE (0x100000 * sizeof(KERNEL_PAGE_TABLE))
+// #define KERNEL_MEMORY_SIZE (0x100000 * sizeof(KERNEL_PAGE_TABLE))
 
 typedef struct ards_t
 {
@@ -154,7 +157,7 @@ static u32 get_one_page()
             memory_map[i] = 1;
             free_pages--;
             assert(free_pages >= 0);
-            u32 page = ((u32)i) << 12;
+            u32 page = PAGE(i);
             LOGK("Get page 0x%p\n", page);
             return page;
         }
@@ -180,6 +183,13 @@ static void put_page(u32 addr)
 
     assert(free_pages > 0 && free_pages < total_pages);
     LOGK("Put page 0x%p\n", addr);
+}
+
+// 得到 cr2 寄存器
+u32 get_cr2()
+{
+    // 直接将 mov eax, cr2，返回值在 eax 中
+    asm volatile("movl %cr2, %eax\n");
 }
 
 u32 get_cr3()
@@ -256,9 +266,25 @@ static page_entry_t *get_pde()
     return (page_entry_t *)(0xfffff000);
 }
 
-static page_entry_t *get_pte(u32 vaddr)
+static page_entry_t *get_pte(u32 vaddr, bool create)
 {
-    return (page_entry_t *)(0xffc00000 | (DIDX(vaddr) << 12));
+    page_entry_t *pde = get_pde();
+    u32 idx = DIDX(vaddr);
+    page_entry_t *entry = &pde[idx];
+
+    assert(create || (!create && entry->present));
+
+    page_entry_t *table = (page_entry_t *)(PDE_MASK | (idx << 12));
+
+    if (!entry->present)
+    {
+        LOGK("Get and create page table for 0x%p\n", vaddr);
+        u32 page = get_one_page();
+        entry_init(entry, IDX(page));
+        memset(table, 0, PAGE_SIZE);
+    }
+
+    return table;
 }
 
 static void flush_tlb(u32 vaddr)
@@ -310,4 +336,117 @@ void free_kpage(u32 vaddr, u32 count)
     assert(count > 0);
     reset_page(&kernel_map, vaddr, count);
     LOGK("FREE  kernel pages 0x%p count %d\n", vaddr, count);
+}
+
+// 将 vaddr 映射物理内存
+void link_page(u32 vaddr)
+{
+    ASSERT_PAGE(vaddr);
+
+    page_entry_t *pte = get_pte(vaddr, true);
+    page_entry_t *entry = &pte[TIDX(vaddr)];
+
+    task_t *task = running_task();
+    bitmap_t *map = task->vmap;
+    u32 index = IDX(vaddr);
+
+    // 如果页面已存在，则直接返回
+    if (entry->present)
+    {
+        assert(bitmap_test(map, index));
+        return;
+    }
+
+    assert(!bitmap_test(map, index));
+    bitmap_set(map, index, true);
+
+    // 怎么做到从8M开始
+    u32 paddr = get_one_page();
+    entry_init(entry, IDX(paddr));
+    flush_tlb(vaddr);
+
+    LOGK("LINK from 0x%p to 0x%p\n", vaddr, paddr);
+}
+
+void unlink_page(u32 vaddr)
+{
+    ASSERT_PAGE(vaddr);
+
+    page_entry_t *pte = get_pte(vaddr, true);
+    page_entry_t *entry = &pte[TIDX(vaddr)];
+
+    task_t *task = running_task();
+    bitmap_t *map = task->vmap;
+    u32 index = IDX(vaddr);
+
+    if (!entry->present)
+    {
+        assert(!bitmap_test(map, index));
+        return;
+    }
+    assert(entry->present && bitmap_test(map, index));
+
+    entry->present = false;
+    bitmap_set(map, index, false);
+
+    u32 paddr = PAGE(entry->index);
+
+    DEBUGK("UNLINK from 0x%p to 0x%p\n", vaddr, paddr);
+
+    put_page(paddr);
+    flush_tlb(vaddr);
+}
+
+page_entry_t *copy_pde()
+{
+    task_t *task = running_task();
+    page_entry_t *pde = (page_entry_t *)alloc_kpage(1); // todo free
+    memcpy(pde, (void *)task->pde, PAGE_SIZE);
+
+    // 最后一个页表指向自己
+    page_entry_t *entry = &pde[1023];
+    entry_init(entry, IDX(pde));
+
+    return pde;
+}
+
+typedef struct page_error_code_t
+{
+    u8 present : 1;
+    u8 write : 1;
+    u8 user : 1;
+    u8 reserved0 : 1;
+    u8 fetch : 1;
+    u8 protection : 1;
+    u8 shadow : 1;
+    u16 reserved1 : 8;
+    u8 sgx : 1;
+    u16 reserved2;
+} _packed page_error_code_t;
+
+void page_fault(
+    u32 vector,
+    u32 edi, u32 esi, u32 ebp, u32 esp,
+    u32 ebx, u32 edx, u32 ecx, u32 eax,
+    u32 gs, u32 fs, u32 es, u32 ds,
+    u32 vector0, u32 error, u32 eip, u32 cs, u32 eflags)
+{
+    assert(vector == 0xe);
+    u32 vaddr = get_cr2();
+    LOGK("fault address 0x%p\n", vaddr);
+
+    page_error_code_t *code = (page_error_code_t *)&error;
+    task_t *task = running_task();
+
+    assert(KERNEL_MEMORY_SIZE <= vaddr < USER_STACK_TOP);
+
+    if (!code->present && (vaddr > USER_STACK_BOTTOM))
+    {
+        u32 page = PAGE(IDX(vaddr));
+        link_page(page);
+        // BMB;
+        return;
+    }
+
+    panic("page fault");
 }

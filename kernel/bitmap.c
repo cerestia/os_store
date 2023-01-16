@@ -21,9 +21,9 @@ void bitmap_init(bitmap_t *map, char *bits, u32 length, u32 start)
 bool bitmap_test(bitmap_t *map, idx_t index)
 {
     assert(index >= map->offset);
-    //获取对应页表索引
+    // 获取对应页表索引
     idx_t idx = index - map->offset;
-    //数组中的字节
+    // 数组中的字节
     u32 bytes = idx / 8;
     u8 bits = idx % 8;
     assert(bytes < map->length);
