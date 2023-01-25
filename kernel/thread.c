@@ -6,6 +6,7 @@
 #include <onix/stdio.h>
 #include <onix/arena.h>
 #include <onix/stdio.h>
+#include <onix/stdlib.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -29,24 +30,24 @@ extern u32 keyboard_read(char *buf, u32 count);
 
 lock_t lock;
 
-void test_recursion()
-{
-    char tmp[0x400];
-    test_recursion();
-}
-
 static void user_init_thread()
 {
     u32 counter = 0;
 
-    char ch;
     while (true)
     {
-        // asm volatile("in $0x92, %ax\n");
-        printf("task is in user mode %d\n", counter++);
-        BMB;
-        test_recursion();
-        sleep(500);
+        pid_t pid = fork();
+
+        if (pid)
+        {
+            printf("fork after parent pid:%d, ppid:%d, %d\n", pid, getpid(), getppid());
+        }
+        else
+        {
+            printf("fork after child pid:%d, ppid:%d, %d\n", pid, getpid(), getppid());
+        }
+        hang();
+        sleep(1000);
     }
 }
 
@@ -64,8 +65,7 @@ void test_thread()
 
     while (true)
     {
-        LOGK("test task %d....\n", counter++);
-        BMB;
+        printf("test thread pid:%d parent_pid:%d %d...\n", getpid(), getppid(), counter++);
         sleep(5000);
     }
 }

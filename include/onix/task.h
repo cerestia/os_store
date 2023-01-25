@@ -32,8 +32,11 @@ typedef struct task_t
     u32 jiffies; // 上次执行全局时间片
     char name[TASK_NAME_LEN];
     u32 uid;
+    pid_t pid;
+    pid_t ppid;
     u32 pde; // 页目录物理地址
     struct bitmap_t *vmap;
+    u32 brk; // 程序堆内存最高地址
     u32 magic;
 } task_t;
 
@@ -80,6 +83,9 @@ typedef struct intr_frame_t
 // void task_init();
 task_t *running_task();
 void schedule();
+
+pid_t task_fork();
+
 void task_yield();
 void task_block(task_t *task, list_t *blist, task_state_t state);
 void task_unblock(task_t *task);
@@ -89,4 +95,6 @@ void task_wakeup();
 
 void task_to_user_mode(target_t target);
 
+pid_t sys_getpid();
+pid_t sys_getppid();
 #endif

@@ -138,7 +138,7 @@ void memory_map_init()
     start_page = IDX(MEMORY_BASE) + memory_map_pages;
     for (size_t i = 0; i < start_page; i++)
     {
-        memory_map[i] = i;
+        memory_map[i] = 1;
     }
 
     LOGK("total pages %d free pages %d\n", total_pages, free_pages);
@@ -397,6 +397,19 @@ void unlink_page(u32 vaddr)
     flush_tlb(vaddr);
 }
 
+// 拷贝一页，返回拷贝后的物理地址
+static u32 copy_page(void *page)
+{
+    u32 paddr = get_one_page();
+
+    page_entry_t *entry = get_pte(0, false);
+    entry_init(entry, IDX(paddr));
+    memcpy((void *)0, (void *)page, PAGE_SIZE);
+
+    entry->present = false;
+    return paddr;
+}
+
 page_entry_t *copy_pde()
 {
     task_t *task = running_task();
@@ -406,6 +419,38 @@ page_entry_t *copy_pde()
     // 最后一个页表指向自己
     page_entry_t *entry = &pde[1023];
     entry_init(entry, IDX(pde));
+
+    page_entry_t *dentry;
+
+    for (size_t didx = 2; didx < 1023; didx++)
+    {
+        dentry = &pde[didx];
+        if (!dentry->present)
+        {
+            continue;
+        }
+        page_entry_t *pte = (page_entry_t *)(PDE_MASK | (didx << 12));
+
+        for (size_t tidx = 0; tidx < 1024; tidx++)
+        {
+            entry = &pte[tidx];
+            if (!entry->present)
+            {
+                continue;
+            }
+
+            // 物理内存引用应该大于0
+            assert(memory_map[entry->index] > 0);
+
+            entry->write = false;
+
+            memory_map[entry->index]++;
+
+            assert(memory_map[entry->index] < 255);
+        }
+    }
+
+    set_cr3(task->pde);
 
     return pde;
 }
@@ -440,7 +485,33 @@ void page_fault(
 
     assert(KERNEL_MEMORY_SIZE <= vaddr < USER_STACK_TOP);
 
-    if (!code->present && (vaddr > USER_STACK_BOTTOM))
+    if (code->present)
+    {
+        assert(code->write);
+
+        page_entry_t *pte = get_pte(vaddr, false);
+        page_entry_t *entry = &pte[TIDX(vaddr)];
+
+        assert(entry->present);
+        assert(memory_map[entry->index] > 0);
+        if (memory_map[entry->index] == 1)
+        {
+            entry->write = true;
+            LOGK("WRITE page for 0x%p\n", vaddr);
+        }
+        else
+        {
+            void *page = (void *)PAGE(IDX(vaddr));
+            u32 paddr = copy_page(page);
+            memory_map[entry->index]--;
+            entry_init(entry, IDX(paddr));
+            flush_tlb(vaddr);
+            LOGK("COPY page for 0x%p\n", vaddr);
+        }
+        return;
+    }
+
+    if (!code->present && (vaddr < task->brk || vaddr >= USER_STACK_BOTTOM))
     {
         u32 page = PAGE(IDX(vaddr));
         link_page(page);
@@ -449,4 +520,34 @@ void page_fault(
     }
 
     panic("page fault");
+}
+
+int32 sys_brk(void *addr)
+{
+    LOGK("task brk 0x%p\n", addr);
+    u32 brk = (u32)addr;
+    ASSERT_PAGE(brk);
+
+    task_t *task = running_task();
+    assert(task->uid != KERNEL_USER);
+
+    assert(KERNEL_MEMORY_SIZE < brk < USER_STACK_BOTTOM);
+
+    u32 old_brk = task->brk;
+
+    if (old_brk > brk)
+    {
+        for (; brk < old_brk; brk == PAGE_SIZE)
+        {
+            unlink_page(brk);
+        }
+    }
+    else if (IDX(brk - old_brk) > free_pages)
+    {
+        // out of memory
+        return -1;
+    }
+
+    task->brk = brk;
+    return 0;
 }

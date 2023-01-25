@@ -1,0 +1,33 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"types.h": "c",
+			"onix.h": "c",
+			"stdarg.h": "c",
+			"stdio.h": "c",
+			"debug.h": "c",
+			"printk.h": "c",
+			"global.h": "c",
+			"io.h": "c",
+			"interrupt.h": "c",
+			"bitmap.h": "c",
+			"assert.h": "c",
+			"task.h": "c",
+			"list.h": "c",
+			"console.h": "c",
+			"gdt.h": "c",
+			"kernel.h": "c",
+			"stdlib.h": "c",
+			"debugk.h": "c",
+			"memory_map.h": "c",
+			"string.h": "c",
+			"syscall.h": "c",
+			"new": "c"
+		}
+	}
+}
