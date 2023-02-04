@@ -30,24 +30,30 @@ extern u32 keyboard_read(char *buf, u32 count);
 
 lock_t lock;
 
+void test_recursion()
+{
+    char tmp[0x400];
+    test_recursion();
+}
+
 static void user_init_thread()
 {
     u32 counter = 0;
 
     while (true)
     {
+        //printf("task is in user mode %d\n", counter++);
         pid_t pid = fork();
-
-        if (pid)
+         if (pid)
         {
-            printf("fork after parent pid:%d, ppid:%d, %d\n", pid, getpid(), getppid());
+            printf("fork after parent %d, %d, %d\n", pid, getpid(), getppid());
         }
         else
         {
-            printf("fork after child pid:%d, ppid:%d, %d\n", pid, getpid(), getppid());
+            printf("fork after child %d, %d, %d\n", pid, getpid(), getppid());
         }
         hang();
-        sleep(1000);
+        sleep(100);
     }
 }
 
@@ -65,7 +71,7 @@ void test_thread()
 
     while (true)
     {
-        printf("test thread pid:%d parent_pid:%d %d...\n", getpid(), getppid(), counter++);
-        sleep(5000);
+        //printf("test thread pid:%d parent_pid:%d %d...\n", getpid(), getppid(), counter++);
+        sleep(500);
     }
 }

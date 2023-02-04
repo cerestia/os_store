@@ -20,7 +20,6 @@
 #define ASSERT_PAGE(addr) assert((addr & 0xfff) == 0)
 
 #define KERNEL_MAP_BITS 0x4000
-#define KERNEL_PAGE_DIR 0x1000
 
 #define PDE_MASK 0xFFC00000
 
@@ -28,11 +27,9 @@ bitmap_t kernel_map;
 
 // 内核页表索引
 static u32 KERNEL_PAGE_TABLE[] = {
-    KERNEL_PAGE_DIR + 1 * PAGE_SIZE,
-    KERNEL_PAGE_DIR + 2 * PAGE_SIZE,
+    0x2000,
+    0x3000
 };
-
-// #define KERNEL_MEMORY_SIZE (0x100000 * sizeof(KERNEL_PAGE_TABLE))
 
 typedef struct ards_t
 {
@@ -448,6 +445,8 @@ page_entry_t *copy_pde()
 
             assert(memory_map[entry->index] < 255);
         }
+        u32 paddr = copy_page(pte);
+        dentry->index = IDX(paddr);
     }
 
     set_cr3(task->pde);
