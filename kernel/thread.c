@@ -38,7 +38,7 @@ void test_recursion()
 
 static void user_init_thread()
 {
-    u32 counter = 0;
+    int status;
 
     while (true)
     {
@@ -47,13 +47,15 @@ static void user_init_thread()
          if (pid)
         {
             printf("fork after parent %d, %d, %d\n", pid, getpid(), getppid());
+            pid_t child = waitpid(pid, &status);
+            printf("wait pid %d status %d %d\n", child, status, time());
         }
         else
         {
             printf("fork after child %d, %d, %d\n", pid, getpid(), getppid());
+            exit(0);
         }
-        hang();
-        sleep(100);
+        sleep(1000);
     }
 }
 
