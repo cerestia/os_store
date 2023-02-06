@@ -19,6 +19,7 @@ extern void keyboard_init();
 extern void tss_init();
 extern void arena_init();
 extern void time_init();
+extern void ide_init();
 
 char message[] = "hello onix!";
 char buf[1024];
@@ -34,6 +35,7 @@ void kernel_init()
     clock_init();
     keyboard_init();
     time_init();
+    ide_init();
     task_init();
     syscall_init();
     set_interrupt_state(true);
