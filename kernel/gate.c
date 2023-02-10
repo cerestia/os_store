@@ -5,6 +5,8 @@
 #include <onix/task.h>
 #include <onix/console.h>
 #include <onix/memory.h>
+#include <onix/device.h>
+#include <onix/string.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -24,14 +26,36 @@ static void sys_default()
     panic("syscall not implemented!!!");
 }
 
+
+
 static task_t *task = NULL;
 
 static u32 sys_test()
 {
-   
+    char ch;
+    device_t *device;
+
+    // device = device_find(DEV_KEYBOARD, 0);
+    // assert(device);
+    // device_read(device->dev, &ch, 1, 0, 0);
+
+    // device = device_find(DEV_CONSOLE, 0);
+    // assert(device);
+    // device_write(device->dev, &ch, 1, 0, 0);
+    void *buf = (void *)alloc_kpage(1);
+
+    device = device_find(DEV_IDE_PART, 0);
+
+    memset(buf, running_task()->pid, 512);
+
+    device_request(device->dev, buf, 1, running_task()->pid, 0, REQ_WRITE);
+
+    free_kpage((u32)buf, 1);
 
     return 255;
 }
+extern int32 console_write();
+
 
 extern void task_yield();
 
@@ -39,7 +63,7 @@ int32 sys_write(fd_t fd, char *buf, u32 len)
 {
     if (fd == stdout || fd == stderr)
     {
-        return console_write(buf, len);
+        return console_write(NULL,buf, len);
     }
     panic("write!!!!");
     return 0;

@@ -153,8 +153,8 @@ handler_entry_table:
     dd interrupt_handler_0x2b
     dd interrupt_handler_0x2c
     dd interrupt_handler_0x2d
-    dd interrupt_handler_0x2e
-    dd interrupt_handler_0x2f
+    dd interrupt_handler_0x2e ;harddisk1 硬盘主通道
+    dd interrupt_handler_0x2f ;harddisk2 硬盘从通道 
 
 section .text
     extern syacall_check

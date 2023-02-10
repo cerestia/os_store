@@ -50,17 +50,18 @@ void init_thread()
 {
 
     char temp[100]; // 为了给栈留空间
+    
     task_to_user_mode(user_init_thread);
 }
 
 void test_thread()
 {
     set_interrupt_state(true);
-    u32 counter = 0;
-
+    //u32 counter = 0;
+    test();
+    LOGK("test finished of task %d\n", getpid());
     while (true)
     {
-        //printf("test thread pid:%d parent_pid:%d %d...\n", getpid(), getppid(), counter++);
-        sleep(500);
+        sleep(10);
     }
 }

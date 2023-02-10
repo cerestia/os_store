@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "ide.h": "c"
+        "ide.h": "c",
+        "device.h": "c"
     }
 }

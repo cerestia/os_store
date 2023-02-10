@@ -67,7 +67,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/lib/fifo.o \
 	$(BUILD)/lib/printf.o \
 	$(BUILD)/kernel/arena.o \
-	$(BUILD)/kernel/ide.o
+	$(BUILD)/kernel/ide.o \
+	$(BUILD)/kernel/device.o 
 
 	$(shell mkdir -p $(dir $@))
 	ld ${LDFLAGS}  $^ -o $@
@@ -82,23 +83,21 @@ $(BUILD)/master.img: $(BUILD)/boot/boot.bin \
 	$(BUILD)/boot/loader.bin \
 	$(BUILD)/system.bin \
 	$(BUILD)/system.map \
+	$(SRC)/utils/master.sfdisk \
 
 	dd if=$(BUILD)/boot/boot.bin of=$@ bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/boot/loader.bin of=$@ bs=512 count=4 seek=2 conv=notrunc
 	dd if=$(BUILD)/system.bin of=$@ bs=512 count=200 seek=10 conv=notrunc
+	sfdisk $@ < $(SRC)/utils/master.sfdisk
 
 $(BUILD)/kernel.iso : $(BUILD)/kernel.bin $(SRC)/utils/grub.cfg
 
-# 检测内核文件是否合法
-	grub-file --is-x86-multiboot2 $<
-# 创建 iso 目录
-	mkdir -p $(BUILD)/iso/boot/grub
-# 拷贝内核文件
-	cp $< $(BUILD)/iso/boot
-# 拷贝 grub 配置文件
-	cp $(SRC)/utils/grub.cfg $(BUILD)/iso/boot/grub
-# 生成 iso 文件
-	grub-mkrescue -o $@ $(BUILD)/iso
+$(BUILD)/slave.img:
+	yes | bximage -q -hd=32 -func=create -sectsize=512 -imgmode=flat $@
+
+IMAGES:= $(BUILD)/master.img $(BUILD)/slave.img
+
+image: $(IMAGES)
 
 test:$(BUILD)/master.img
 
@@ -116,30 +115,29 @@ bochsb: $(BUILD)/kernel.iso
 	bochs -q -f ./bochsrc.grub -unlock
 
 .PHONY: bochs
-	bochs: $(BUILD)/master.img
+	bochs: $(IMAGES)
 			bochs -q
 
-QEMU :=qemu-system-i386 \
-	-m 32M \
-	-audiodev pa,id=hda \
-	-rtc base=localtime \
-	-machine pcspk-audiodev=hda \
+QEMU :=qemu-system-i386 
+QEMU+=-m 32M 
+QEMU+=-audiodev pa,id=hda 
+QEMU+=-rtc base=localtime 
+QEMU+=-machine pcspk-audiodev=hda 
+QEMU+= -rtc base=localtime # 设备本地时间
+QEMU+= -drive file=$(BUILD)/master.img,if=ide,index=0,media=disk,format=raw # 主硬盘
+QEMU+= -drive file=$(BUILD)/slave.img,if=ide,index=1,media=disk,format=raw # 从硬盘
 
 
-QEMU_DISK:=-boot c \
-	-drive file=$(BUILD)/master.img,if=ide,index=0,media=disk,format=raw \
-
-QEMU_CDROM:=-boot d \
-	-drive file=$(BUILD)/kernel.iso,media=cdrom 
+QEMU_DISK:=-boot c 
 
 QEMU_DEBUG:= -s -S
 
 .PHONY: qemu
-qemu: $(BUILD)/master.img
+qemu: $(IMAGES)
 	$(QEMU)  $(QEMU_DISK)
 
 .PHONY: qemug
-qemug: $(BUILD)/master.img
+qemug: $(IMAGES)
 	$(QEMU)  $(QEMU_DISK) $(QEMU_DEBUG)
 
 .PHONY: qemub

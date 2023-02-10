@@ -8,6 +8,10 @@
 #define NULL ((void *)0) // 空指针
 #define EOS '\0'
 
+#define CONCAT(x, y) x##y
+#define RESERVED_TOKEN(x, y) CONCAT(x, y)
+#define RESERVED RESERVED_TOKEN(reserved, __LINE__)
+
 #ifndef __cplusplus
 
 #define bool _Bool
@@ -46,6 +50,7 @@ typedef unsigned int u32;
 typedef unsigned long long u64;
 
 typedef int32 pid_t;
+typedef int32 dev_t;
 
 typedef u32 time_t;
 typedef u32 idx_t;
