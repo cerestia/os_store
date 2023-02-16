@@ -29,6 +29,7 @@ u32 hash(dev_t dev, idx_t block)
     return (dev ^ block) % HASH_COUNT;
 }
 
+// 从哈希表中查找 buffer
 static buffer_t *get_from_hash_table(dev_t dev, idx_t block)
 {
     u32 idx = hash(dev, block);
@@ -50,7 +51,6 @@ static buffer_t *get_from_hash_table(dev_t dev, idx_t block)
         return NULL;
     }
 
-    // 如果 bf 在缓冲列表中，则移除
     if (list_search(&free_list, &bf->rnode))
     {
         list_remove(&bf->rnode);
@@ -59,7 +59,6 @@ static buffer_t *get_from_hash_table(dev_t dev, idx_t block)
     return bf;
 }
 
-// 将 bf 放入哈希表
 static void hash_locate(buffer_t *bf)
 {
     u32 idx = hash(bf->dev, bf->block);
@@ -77,7 +76,6 @@ static void hash_remove(buffer_t *bf)
     list_remove(&bf->hnode);
 }
 
-// 直接初始化过慢，按需取用
 static buffer_t *get_new_buffer()
 {
     buffer_t *bf = NULL;
@@ -205,12 +203,9 @@ void buffer_init()
 {
     LOGK("buffer_t size is %d\n", sizeof(buffer_t));
 
-    // 初始化空闲链表
     list_init(&free_list);
-    // 初始化等待进程链表
     list_init(&wait_list);
 
-    // 初始化哈希表
     for (size_t i = 0; i < HASH_COUNT; i++)
     {
         list_init(&hash_table[i]);

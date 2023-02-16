@@ -172,7 +172,7 @@ void device_request(dev_t dev, void* buf, u8 count, idx_t idx, int flags, u32 ty
 {
     device_t* device = device_get(dev);
     assert(device->type==DEV_BLOCK);
-    idx_t offset = device_ioctl(device->dev, DEV_CMD_SECTOR_START, 0, 0);
+    idx_t offset = idx+device_ioctl(device->dev, DEV_CMD_SECTOR_START, 0, 0);
 
     if(device->parent)
     {
@@ -180,7 +180,7 @@ void device_request(dev_t dev, void* buf, u8 count, idx_t idx, int flags, u32 ty
     }
     request_t* req = kmalloc(sizeof(request_t));
 
-    req->dev = dev;
+    req->dev = device->dev;
     req->buf = buf;
     req->count = count;
     req->idx = offset;

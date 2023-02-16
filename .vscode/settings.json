@@ -2,6 +2,7 @@
     "files.associations": {
         "ide.h": "c",
         "device.h": "c",
-        "buffer.h": "c"
+        "buffer.h": "c",
+        "string.h": "c"
     }
 }
