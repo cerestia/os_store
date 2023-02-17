@@ -68,7 +68,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/kernel/ide.o \
 	$(BUILD)/kernel/device.o\
 	$(BUILD)/kernel/buffer.o \
-	$(BUILD)/fs/super.o
+	$(BUILD)/fs/super.o \
+	$(BUILD)/fs/bmap.o
 
 	$(shell mkdir -p $(dir $@))
 	ld ${LDFLAGS}  $^ -o $@

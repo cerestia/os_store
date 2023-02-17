@@ -3,6 +3,8 @@
         "ide.h": "c",
         "device.h": "c",
         "buffer.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "assert.h": "c",
+        "memory.h": "c"
     }
 }
