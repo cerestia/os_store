@@ -24,6 +24,19 @@ typedef struct inode_desc_t
     u16 zone[9]; // 直接 (0-6)、间接(7)或双重间接 (8) 逻辑块号
 } inode_desc_t;
 
+typedef struct ionde_t
+{
+    inode_desc_t* desc;
+    struct buffer_t* buf;
+    dev_t dev;
+    idx_t nr;
+    u32 count;
+    time_t access_time;
+    time_t create_time;
+    list_node_t node;
+    dev_t mount;
+}inode_t;
+
 typedef struct super_desc_t
 {
     u16 inodes;        // 节点数
@@ -36,11 +49,26 @@ typedef struct super_desc_t
     u16 magic;         // 文件系统魔数
 } super_desc_t;
 
+typedef struct super_block_t
+{
+    super_desc_t* desc;
+    struct buffer_t* buf;
+    struct buffer_t* imaps[IMAP_NR];
+    struct buffer_t* zmaps[ZMAP_NR];
+    dev_t dev;
+    list_t inode_list;
+    inode_t* iroot;
+    inode_t* imount;
+}super_block_t;
+
 // 文件目录项结构
 typedef struct dentry_t
 {
     u16 nr;              // i 节点
     char name[NAME_LEN]; // 文件名
 } dentry_t;
+
+super_block_t *get_super(dev_t dev);  // 获得 dev 对应的超级块
+super_block_t *read_super(dev_t dev); // 读取 dev 对应的超级块
 
 #endif
