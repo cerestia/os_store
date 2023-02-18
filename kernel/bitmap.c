@@ -44,6 +44,11 @@ void bitmap_set(bitmap_t *map, idx_t index, bool value)
     {
         map->bits[bytes] |= (1 << bits);
     }
+    else
+    {
+        // 置为 0
+        map->bits[bytes] &= ~(1 << bits);
+    }
 }
 
 int bitmap_scan(bitmap_t *map, u32 count)
