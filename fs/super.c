@@ -77,7 +77,7 @@ super_block_t* read_super(dev_t dev)
     for(int i=0;i<sb->desc->zmap_blocks;i++)
     {
         assert(i<ZMAP_NR);
-        if(sb->zmaps[i]==bread(dev,idx))
+        if(sb->zmaps[i]=bread(dev,idx))
             idx++;
         else   
             break;
@@ -99,7 +99,8 @@ static void mount_root()
     assert(device);
     super_block_t *sb = read_super(device->dev);
 
-    idx_t idx = ialloc(sb->dev);
+    idx_t idx;
+    idx = ialloc(sb->dev);
     ifree(sb->dev, idx);
 
     idx = balloc(sb->dev);

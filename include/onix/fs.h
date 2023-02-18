@@ -46,7 +46,7 @@ typedef struct super_desc_t
     u16 imap_blocks;   // i 节点位图所占用的数据块数
     u16 zmap_blocks;   // 逻辑块位图所占用的数据块数
     u16 firstdatazone; // 第一个数据逻辑块号
-    u16 log_zone_size;sb // log2(每逻辑块数据块数)
+    u16 log_zone_size; // log2(每逻辑块数据块数)
     u32 max_size;      // 文件最大长度
     u16 magic;         // 文件系统魔数
 } super_desc_t;

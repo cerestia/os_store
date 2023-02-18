@@ -22,9 +22,9 @@ idx_t balloc(dev_t dev)
         buf = sb->zmaps[i];
         assert(buf);
         // 将整个缓冲区作为位图
-        bitmap_make(&map,buf->data, BLOCK_SIZE,i*BLOCK_SIZE+sb->desc->firstdatazone-1);
+        bitmap_make(&map,buf->data, BLOCK_SIZE, i * BLOCK_SIZE + sb->desc->firstdatazone-1);
 
-        bit = bitmap_scan(&map,i);
+        bit = bitmap_scan(&map,1);
         if(bit != EOF)
         {
             // 如果扫描成功，则 标记缓冲区脏，中止查找
