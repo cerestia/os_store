@@ -8,12 +8,12 @@
 #define SECTOR_SIZE 512 // 扇区大小
 
 #define MINIX1_MAGIC 0x137F // 文件系统魔数
-#define NAME_LEN 14        // 文件名长度
+#define NAME_LEN 14         // 文件名长度
 
 #define IMAP_NR 8
 #define ZMAP_NR 8
 
-#define BLOCK_BITS (BLOCK_SIZE*8) // 块位图大小
+#define BLOCK_BITS (BLOCK_SIZE * 8)                      // 块位图大小
 #define BLOCK_INODES (BLOCK_SIZE / sizeof(inode_desc_t)) // 块 inode 数量
 #define BLOCK_DENTRIES (BLOCK_SIZE / sizeof(dentry_t))   // 块 dentry 数量
 #define BLOCK_INDEXES (BLOCK_SIZE / sizeof(u16))         // 块索引数量
@@ -22,6 +22,10 @@
 #define INDIRECT1_BLOCK BLOCK_INDEXES                                  // 一级间接块数量
 #define INDIRECT2_BLOCK (INDIRECT1_BLOCK * INDIRECT1_BLOCK)            // 二级间接块数量
 #define TOTAL_BLOCK (DIRECT_BLOCK + INDIRECT1_BLOCK + INDIRECT2_BLOCK) // 全部块数量
+
+#define SEPARATOR1 '/'                                       // 目录分隔符 1
+#define SEPARATOR2 '\\'                                      // 目录分隔符 2
+#define IS_SEPARATOR(c) (c == SEPARATOR1 || c == SEPARATOR2) // 字符是否位目录分隔符
 
 typedef struct inode_desc_t
 {
@@ -36,8 +40,8 @@ typedef struct inode_desc_t
 
 typedef struct inode_t
 {
-    inode_desc_t* desc;
-    struct buffer_t* buf;
+    inode_desc_t *desc;
+    struct buffer_t *buf;
     dev_t dev;
     idx_t nr;
     u32 count;
@@ -45,7 +49,7 @@ typedef struct inode_t
     time_t create_time;
     list_node_t node;
     dev_t mount;
-}inode_t;
+} inode_t;
 
 typedef struct super_desc_t
 {
@@ -61,15 +65,15 @@ typedef struct super_desc_t
 
 typedef struct super_block_t
 {
-    super_desc_t* desc;
-    struct buffer_t* buf;
-    struct buffer_t* imaps[IMAP_NR];
-    struct buffer_t* zmaps[ZMAP_NR];
+    super_desc_t *desc;
+    struct buffer_t *buf;
+    struct buffer_t *imaps[IMAP_NR];
+    struct buffer_t *zmaps[ZMAP_NR];
     dev_t dev;
     list_t inode_list;
-    inode_t* iroot;
-    inode_t* imount;
-}super_block_t;
+    inode_t *iroot;
+    inode_t *imount;
+} super_block_t;
 
 // 文件目录项结构
 typedef struct dentry_t
@@ -93,6 +97,5 @@ idx_t bmap(inode_t *inode, idx_t block, bool create);
 inode_t *get_root_inode();          // 获取根目录 inode
 inode_t *iget(dev_t dev, idx_t nr); // 获得设备 dev 的 nr inode
 void iput(inode_t *inode);          // 释放 inode
-
 
 #endif

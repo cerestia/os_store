@@ -31,6 +31,9 @@ static task_t *task = NULL;
 
 static u32 sys_test()
 {
+    extern void dir_test();
+    dir_test();
+    
     char ch;
     device_t *device;
 
