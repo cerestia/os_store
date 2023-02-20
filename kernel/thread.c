@@ -50,16 +50,16 @@ void init_thread()
 {
 
     char temp[100]; // 为了给栈留空间
-    
+
     task_to_user_mode(user_init_thread);
 }
 
 void test_thread()
 {
     set_interrupt_state(true);
+    mode_t mode = umask(0002);
     while (true)
     {
-        test();
         sleep(10);
     }
 }

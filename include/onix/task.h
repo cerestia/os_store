@@ -5,7 +5,7 @@
 #include <onix/list.h>
 
 #define KERNEL_USER 0
-#define NORMAL_USER 1
+#define NORMAL_USER 1000
 
 #define TASK_NAME_LEN 16
 
@@ -32,13 +32,17 @@ typedef struct task_t
     u32 jiffies; // 上次执行全局时间片
     char name[TASK_NAME_LEN];
     u32 uid;
+    u32 gid; // 用户组 id
     pid_t pid;
     pid_t ppid;
     u32 pde; // 页目录物理地址
     struct bitmap_t *vmap;
-    u32 brk; // 程序堆内存最高地址
-    int status ; // 
+    u32 brk;    // 程序堆内存最高地址
+    int status; //
     pid_t waitpid;
+    struct inode_t *ipwd;  // 进程当前目录 inode program work directory
+    struct inode_t *iroot; // 进程根目录 inode
+    u16 umask;             // 进程用户权限
     u32 magic;
 } task_t;
 
@@ -88,7 +92,7 @@ void schedule();
 
 pid_t task_fork();
 void task_exit();
-pid_t task_waitpid(pid_t pid,int32 *status);
+pid_t task_waitpid(pid_t pid, int32 *status);
 
 void task_yield();
 void task_block(task_t *task, list_t *blist, task_state_t state);

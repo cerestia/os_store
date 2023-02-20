@@ -11,8 +11,9 @@
 #include <onix/global.h>
 #include <onix/task.h>
 #include <onix/arena.h>
-#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
+#include <onix/fs.h>
 
+#define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 extern bitmap_t kernel_map;
 extern void task_switch(task_t *next);
 
@@ -33,7 +34,7 @@ static task_t *get_free_task()
     {
         if (task_table[i] == NULL)
         {
-            task_t *task = (task_t *)alloc_kpage(1); 
+            task_t *task = (task_t *)alloc_kpage(1);
             memset((task_t *)task, 0, PAGE_SIZE);
             task->pid = i;
             task_table[i] = task;
@@ -228,10 +229,14 @@ static task_t *task_create(target_t target, const char *name, u32 priority, u32 
     task->ticks = task->priority;
     task->state = TASK_READY;
     task->uid = uid;
+    task->gid = 0; // TODO: group
     task->vmap = &kernel_map;
     task->pde = KERNEL_PAGE_DIR;
     task->brk = KERNEL_MEMORY_SIZE;
     task->magic = ONIX_MAGIC;
+    task->iroot = get_root_inode();
+    task->ipwd = get_root_inode();
+    task->umask = 0022; // 对应 0755
 
     return task;
 }
@@ -323,11 +328,11 @@ pid_t task_fork()
     child->state = TASK_READY;
 
     // 拷贝用户进程虚拟内存位图
-    child->vmap = kmalloc(sizeof(bitmap_t)); 
+    child->vmap = kmalloc(sizeof(bitmap_t));
     memcpy(child->vmap, task->vmap, sizeof(bitmap_t));
 
     // 拷贝虚拟位图缓存
-    void *buf = (void *)alloc_kpage(1); 
+    void *buf = (void *)alloc_kpage(1);
     memcpy(buf, task->vmap->bits, PAGE_SIZE);
     child->vmap->bits = buf;
 
@@ -341,10 +346,9 @@ pid_t task_fork()
     return child->pid;
 }
 
-
 void task_exit(int status)
 {
-    task_t* task = running_task();
+    task_t *task = running_task();
 
     assert(task->node.next == NULL && task->node.prev == NULL && task->state == TASK_RUNNING);
 
@@ -446,5 +450,5 @@ void task_init()
 
     idle_task = task_create(idle_thread, "idle", 1, KERNEL_USER);
     task_create(init_thread, "init", 5, NORMAL_USER);
-    task_create(test_thread, "test", 5, KERNEL_USER);
+    task_create(test_thread, "test", 5, NORMAL_USER);
 }

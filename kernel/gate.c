@@ -27,8 +27,6 @@ static void sys_default()
     panic("syscall not implemented!!!");
 }
 
-
-
 static task_t *task = NULL;
 
 static u32 sys_test()
@@ -47,20 +45,20 @@ static u32 sys_test()
 }
 extern int32 console_write();
 
-
 extern void task_yield();
 
 int32 sys_write(fd_t fd, char *buf, u32 len)
 {
     if (fd == stdout || fd == stderr)
     {
-        return console_write(NULL,buf, len);
+        return console_write(NULL, buf, len);
     }
     panic("write!!!!");
     return 0;
 }
 
 extern time_t sys_time();
+extern mode_t sys_umask();
 
 void syscall_init()
 {
@@ -81,4 +79,5 @@ void syscall_init()
     syscall_table[SYS_NR_BRK] = sys_brk;
     syscall_table[SYS_NR_WRITE] = sys_write;
     syscall_table[SYS_NR_TIME] = sys_time;
+    syscall_table[SYS_NR_UMASK] = sys_umask;
 }

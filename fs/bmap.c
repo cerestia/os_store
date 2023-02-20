@@ -7,48 +7,47 @@
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
-//allocate a block
+// allocate a block
 idx_t balloc(dev_t dev)
 {
-    super_block_t* sb = get_super(dev);
+    super_block_t *sb = get_super(dev);
     assert(sb);
 
-    buffer_t* buf = NULL;
+    buffer_t *buf = NULL;
     idx_t bit = EOF;
     bitmap_t map;
 
-    for(size_t i=0;i<ZMAP_NR;i++)
+    for (size_t i = 0; i < ZMAP_NR; i++)
     {
         buf = sb->zmaps[i];
         assert(buf);
         // 将整个缓冲区作为位图
-        bitmap_make(&map,buf->data, BLOCK_SIZE, i * BLOCK_SIZE + sb->desc->firstdatazone-1);
+        bitmap_make(&map, buf->data, BLOCK_SIZE, i * BLOCK_SIZE + sb->desc->firstdatazone - 1);
 
-        bit = bitmap_scan(&map,1);
-        if(bit != EOF)
+        bit = bitmap_scan(&map, 1);
+        if (bit != EOF)
         {
             // 如果扫描成功，则 标记缓冲区脏，中止查找
             assert(bit < sb->desc->zones);
             buf->dirty = true;
             break;
         }
-        
     }
     bwrite(buf);
     return bit;
 }
 
-void bfree(dev_t dev ,idx_t idx)
+void bfree(dev_t dev, idx_t idx)
 {
-    super_block_t* sb = get_super(dev);
-    assert(sb!=NULL);
-    assert(idx< sb->desc->zones);
+    super_block_t *sb = get_super(dev);
+    assert(sb != NULL);
+    assert(idx < sb->desc->zones);
 
-    buffer_t* buf;
+    buffer_t *buf;
     bitmap_t map;
-    for(size_t i=0;i<ZMAP_NR;i++)
+    for (size_t i = 0; i < ZMAP_NR; i++)
     {
-         // 跳过开始的块
+        // 跳过开始的块
         if (idx > BLOCK_BITS * (i + 1))
         {
             continue;
@@ -73,16 +72,16 @@ void bfree(dev_t dev ,idx_t idx)
 
 idx_t ialloc(dev_t dev)
 {
-    super_block_t* sb = get_super(dev);
+    super_block_t *sb = get_super(dev);
     assert(sb);
 
     buffer_t *buf = NULL;
     idx_t bit = EOF;
     bitmap_t map;
 
-    for( size_t i=0;i<IMAP_NR;i++)
+    for (size_t i = 0; i < IMAP_NR; i++)
     {
-         buf = sb->imaps[i];
+        buf = sb->imaps[i];
         assert(buf);
 
         bitmap_make(&map, buf->data, BLOCK_BITS, i * BLOCK_BITS);
@@ -123,4 +122,64 @@ void ifree(dev_t dev, idx_t idx)
         break;
     }
     bwrite(buf); // todo 调试期间强同步
+}
+
+// 获取 inode 第 block 块的索引值
+// 如果不存在 且 create 为 true，则创建
+idx_t bmap(inode_t *inode, idx_t block, bool create)
+{
+    assert(block >= 0 && block < TOTAL_BLOCK);
+
+    u16 index = block;
+
+    u16 *array = inode->desc->zone;
+    buffer_t *buf = inode->buf;
+    buf->count += 1;
+    int level = 0;
+    int divider = 1;
+    if (block < DIRECT_BLOCK)
+    {
+        goto reckon;
+    }
+
+    block -= DIRECT_BLOCK;
+
+    if (block < INDIRECT1_BLOCK)
+    {
+        index = DIRECT_BLOCK;
+        level = 1;
+        divider = 1;
+        goto reckon;
+    }
+
+    block -= INDIRECT1_BLOCK;
+    assert(block < INDIRECT2_BLOCK);
+    index = DIRECT_BLOCK + 1;
+    level = 2;
+    divider = BLOCK_INDEXES;
+
+reckon:
+    for (; level >= 0; level--)
+    {
+        // 如果不存在 且 create 则申请一块文件块
+        if (!array[index] && create)
+        {
+            array[index] = balloc(inode->dev);
+            buf->dirty = true;
+        }
+        brelse(buf);
+
+        // 如果 level == 0 或者 索引不存在，直接返回
+        if (level == 0 || !array[index])
+        {
+            return array[index];
+        }
+
+        // level 不为 0，处理下一级索引
+        buf = bread(inode->dev, array[index]);
+        index = block / divider;
+        block = block % divider;
+        divider /= BLOCK_INDEXES;
+        array = (u16 *)buf->data;
+    }
 }
