@@ -38,15 +38,15 @@ typedef struct inode_desc_t
     u16 zone[9]; // 直接 (0-6)、间接(7)或双重间接 (8) 逻辑块号
 } inode_desc_t;
 
-typedef struct inode_t
+typedef struct inode_tf
 {
     inode_desc_t *desc;
     struct buffer_t *buf;
     dev_t dev;
     idx_t nr;
     u32 count;
-    time_t access_time;
-    time_t create_time;
+    time_t atime;
+    time_t ctime;
     list_node_t node;
     dev_t mount;
 } inode_t;
@@ -101,4 +101,9 @@ void iput(inode_t *inode);          // 释放 inode
 inode_t *named(char *pathname, char **next); // 获取 pathname 对应的父目录 inode
 inode_t *namei(char *pathname);              // 获取 pathname 对应的 inode
 
+// 从 inode 的 offset 处，读 len 个字节到 buf
+int inode_read(inode_t *inode, char *buf, u32 len, off_t offset);
+
+// 从 inode 的 offset 处，将 buf 的 len 个字节写入磁盘
+int inode_write(inode_t *inode, char *buf, u32 len, off_t offset);
 #endif
