@@ -5,8 +5,71 @@
 #include <onix/string.h>
 #include <onix/assert.h>
 #include <onix/debug.h>
+#include <onix/task.h>
+#include <onix/stat.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
+
+#define P_EXEC IXOTH
+#define P_READ IROTH
+#define P_WRITE IWOTH
+
+static bool permission(inode_t *inode, u16 mask)
+{
+    u16 mode = inode->desc->mode;
+
+    if (!inode->desc->nlinks)
+        return false;
+
+    task_t *task = running_task();
+    if (task->uid == KERNEL_USER)
+        return true;
+
+    if (task->uid == inode->desc->uid)
+        mode >>= 6;
+    else if (task->gid == inode->desc->gid)
+        mode >>= 3;
+
+    if ((mode & mask & 0b111) == mask)
+        return true;
+
+    return false;
+}
+
+char *strsep(const char *str)
+{
+    char *ptr = (char *)str;
+
+    while (true)
+    {
+        if (IS_SEPARATOR(*ptr))
+        {
+            return ptr;
+        }
+        if (*ptr++ == EOS)
+        {
+            return NULL;
+        }
+    }
+}
+
+char *strrsep(const char *str)
+{
+    char *last = NULL;
+    char *ptr = (char *)str;
+
+    while (true)
+    {
+        if (IS_SEPARATOR(*ptr))
+        {
+            last = ptr;
+        }
+        if (*ptr++ == EOS)
+        {
+            return last;
+        }
+    }
+}
 
 // 判断文件名是否相等
 static bool match_name(const char *name, const char *entry_name, char **next)
@@ -29,6 +92,8 @@ static bool match_name(const char *name, const char *entry_name, char **next)
 }
 
 // 获取 dir 目录下的 name 目录 所在的 dentry_t 和 buffer_t
+// next save next dir path
+// result save the address of entry
 static buffer_t *find_entry(inode_t **dir, const char *name, char **next, dentry_t **result)
 {
 
@@ -65,6 +130,7 @@ static buffer_t *find_entry(inode_t **dir, const char *name, char **next, dentry
 }
 
 // 在 dir 目录中添加 name 目录项
+// result save the address of added dir
 static buffer_t *add_entry(inode_t *dir, const char *name, dentry_t **result)
 {
     char *next = NULL;
@@ -114,57 +180,104 @@ static buffer_t *add_entry(inode_t *dir, const char *name, dentry_t **result)
     }
 }
 
-#include <onix/task.h>
-
-void dir_test()
+// 获取 pathname 对应的父目录 inode
+inode_t *named(char *pathname, char **next)
 {
+    inode_t *inode = NULL;
     task_t *task = running_task();
-    inode_t *inode = task->iroot;
-    char *next = NULL;
+    char *left = pathname;
+
+    if (IS_SEPARATOR(left[0]))
+    {
+        inode = task->iroot;
+        left++;
+    }
+    else if (left[0])
+        inode = task->ipwd;
+    else
+        return NULL;
+
+    //?
+    inode->count++;
+    *next = left;
+    if (!*left)
+    {
+        return inode;
+    }
+
+    char *right = strrsep(left);
+    if (!right || right < left)
+    {
+        return inode;
+    }
+
+    right++;
+
+    *next = left;
     dentry_t *entry = NULL;
     buffer_t *buf = NULL;
 
-    buf = find_entry(&inode, "hello.txt", &next, &entry);
-    idx_t nr = entry->nr;
+    while (true)
+    {
+        buf = find_entry(&inode, left, next, &entry);
+        if (!buf)
+            goto failure;
+
+        dev_t dev = inode->dev;
+        iput(inode);
+        inode = iget(dev, entry->nr);
+        if (!ISDIR(inode->desc->mode) || !permission(inode, P_EXEC))
+            goto failure;
+
+        if (right == *next)
+            goto success;
+
+        left = *next;
+    }
+
+success:
     brelse(buf);
+    return inode;
 
-    buf = add_entry(inode, "world.txt", &entry);
-    entry->nr = nr;
-
-    inode_t *hello = iget(inode->dev, nr);
-    hello->desc->nlinks++;
-    hello->buf->dirty = true;
-
+failure:
+    brelse(buf);
     iput(inode);
-    iput(hello);
+    return NULL;
+}
+
+inode_t *namei(char *pathname)
+{
+    char *next = NULL;
+    inode_t *dir = named(pathname, &next);
+    if (!dir)
+        return NULL;
+    if (!(*next))
+        return dir;
+
+    char *name = next;
+    dentry_t *entry = NULL;
+    buffer_t *buf = find_entry(&dir, name, &next, &entry);
+    if (!buf)
+    {
+        iput(dir);
+        return NULL;
+    }
+
+    inode_t *inode = iget(dir->dev, entry->nr);
+
+    iput(dir);
     brelse(buf);
+    return inode;
+}
 
-    // char pathname[] = "d1/d2/d3/d4";
+void dir_test()
+{
+    char pathname[] = "/";
+    char *name = NULL;
+    inode_t *inode = named(pathname, &name);
+    iput(inode);
 
-    // dev_t dev = inode->dev;
-    // char *name = pathname;
-    // buf = find_entry(&inode, name, &next, &entry);
-    // brelse(buf);
-
-    // iput(inode);
-    // inode = iget(dev, entry->nr);
-
-    // name = next;
-    // buf = find_entry(&inode, name, &next, &entry);
-    // brelse(buf);
-
-    // iput(inode);
-    // inode = iget(dev, entry->nr);
-
-    // name = next;
-    // buf = find_entry(&inode, name, &next, &entry);
-    // brelse(buf);
-
-    // iput(inode);
-    // inode = iget(dev, entry->nr);
-
-    // name = next;
-    // buf = find_entry(&inode, name, &next, &entry);
-    // brelse(buf);
-    // iput(inode);
+    inode = namei("/home/hello.txt");
+    LOGK("get_inode %d\n", inode->nr);
+    iput(inode);
 }
