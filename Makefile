@@ -22,6 +22,7 @@ LDFLAGS:= -m elf_i386 \
 		--section-start=.multiboot2=$(MULTIBOOT2)
 LDFLAGS:=$(strip ${LDFLAGS})
 
+FREE_LOOP:= $(shell cat utils/free_loop.txt)
 
 $(BUILD)/boot/%.bin: $(SRC)/boot/%.s
 	$(shell mkdir -p $(dir $@))

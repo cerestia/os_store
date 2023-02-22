@@ -1,4 +1,6 @@
 
+FREE_LOOP:= $(shell cat utils/free_loop.txt)
+
 $(BUILD)/master.img: $(BUILD)/boot/boot.bin \
 	$(BUILD)/boot/loader.bin \
 	$(BUILD)/system.bin \
@@ -24,18 +26,20 @@ $(BUILD)/master.img: $(BUILD)/boot/boot.bin \
 	sfdisk $@ < $(SRC)/utils/master.sfdisk
 
 # 挂载设备
-	sudo losetup /dev/loop3 --partscan $@
+	sudo losetup -f > utils/free_loop.txt
+	sudo losetup $(FREE_LOOP) --partscan $@
 
 # 创建 minux 文件系统
-	sudo mkfs.minix -1 -n 14 /dev/loop3p1
+	sudo mkfs.minix -1 -n 14 $(FREE_LOOP)p1
 
 # 挂载文件系统
-	sudo mount /dev/loop3p1 /mnt
+	sudo mount $(FREE_LOOP)p1 /mnt
 
 # 切换所有者
 	sudo chown ${USER} /mnt 
 
 # 创建目录
+	mkdir -p /mnt/empty
 	mkdir -p /mnt/home
 	mkdir -p /mnt/d1/d2/d3/d4
 
@@ -47,7 +51,7 @@ $(BUILD)/master.img: $(BUILD)/boot/boot.bin \
 	sudo umount /mnt
 
 # 卸载设备
-	sudo losetup -d /dev/loop3
+	sudo losetup -d $(FREE_LOOP)
 
 $(BUILD)/slave.img: $(SRC)/utils/slave.sfdisk
 
@@ -58,13 +62,13 @@ $(BUILD)/slave.img: $(SRC)/utils/slave.sfdisk
 	sfdisk $@ < $(SRC)/utils/slave.sfdisk
 
 # 挂载设备
-	sudo losetup /dev/loop3 --partscan $@
+	sudo losetup $(FREE_LOOP) --partscan $@
 
 # 创建 minux 文件系统
-	sudo mkfs.minix -1 -n 14 /dev/loop3p1
+	sudo mkfs.minix -1 -n 14 $(FREE_LOOP)p1
 
 # 挂载文件系统
-	sudo mount /dev/loop3p1 /mnt
+	sudo mount $(FREE_LOOP)p1 /mnt
 
 # 切换所有者
 	sudo chown ${USER} /mnt 
@@ -76,16 +80,16 @@ $(BUILD)/slave.img: $(SRC)/utils/slave.sfdisk
 	sudo umount /mnt
 
 # 卸载设备
-	sudo losetup -d /dev/loop3
+	sudo losetup -d $(FREE_LOOP)
 
 .PHONY: mount0
 mount0: $(BUILD)/master.img
-	sudo losetup /dev/loop3 --partscan $<
-	sudo mount /dev/loop3p1 /mnt
+	sudo losetup $(FREE_LOOP) --partscan $<
+	sudo mount $(FREE_LOOP)p1 /mnt
 	sudo chown ${USER} /mnt 
 
 .PHONY: umount0
-umount0: /dev/loop3
+umount0: $(FREE_LOOP)
 	-sudo umount /mnt
 	-sudo losetup -d $<
 

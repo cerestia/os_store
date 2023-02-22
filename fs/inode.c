@@ -149,7 +149,7 @@ int inode_read(inode_t *inode, char *buf, u32 len, off_t offset)
 
     while (left)
     {
-        // 找到对应的文件便宜，所在文件块
+        // 找到对应的文件，所在文件块
         idx_t nr = bmap(inode, offset / BLOCK_SIZE, false);
         assert(nr);
 
