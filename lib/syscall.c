@@ -102,6 +102,16 @@ pid_t waitpid(pid_t pid, int32 *status)
     return _syscall2(SYS_NR_WAITPID, pid, (u32)status);
 }
 
+int link(char *oldname, char *newname)
+{
+    return _syscall2(SYS_NR_LINK, (u32)oldname, (u32)newname);
+}
+
+int unlink(char *filename)
+{
+    return _syscall1(SYS_NR_UNLINK, (u32)filename);
+}
+
 time_t time()
 {
     return _syscall0(SYS_NR_TIME);
