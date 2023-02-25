@@ -40,6 +40,8 @@ void test_recursion()
 static void user_init_thread()
 {
 
+    fd_t fd = open("/world.txt", O_CREAT | O_RDWR, 0755);
+    close(fd);
     while (true)
     {
         sleep(1000);
@@ -56,10 +58,8 @@ void init_thread()
 
 void test_thread()
 {
-    // set_interrupt_state(true);
+    set_interrupt_state(true);
 
-    fd_t fd = open("/world.txt", O_RDWR | O_CREAT, 0755);
-    close(fd);
     while (true)
     {
         test();

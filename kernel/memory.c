@@ -412,41 +412,40 @@ static u32 copy_page(void *page)
 page_entry_t *copy_pde()
 {
     task_t *task = running_task();
-    page_entry_t *pde = (page_entry_t *)alloc_kpage(1); 
+
+    page_entry_t *pde = (page_entry_t *)alloc_kpage(1);
     memcpy(pde, (void *)task->pde, PAGE_SIZE);
 
-    // 最后一个页表指向自己
+    // 将最后一个页表指向页目录自己，方便修改
     page_entry_t *entry = &pde[1023];
     entry_init(entry, IDX(pde));
 
     page_entry_t *dentry;
 
-    for (size_t didx = 2; didx < (sizeof(KERNEL_PAGE_TABLE) / 4); didx++)
+    for (size_t didx = (sizeof(KERNEL_PAGE_TABLE) / 4); didx < 1023; didx++)
     {
         dentry = &pde[didx];
         if (!dentry->present)
-        {
             continue;
-        }
+
         page_entry_t *pte = (page_entry_t *)(PDE_MASK | (didx << 12));
 
         for (size_t tidx = 0; tidx < 1024; tidx++)
         {
             entry = &pte[tidx];
             if (!entry->present)
-            {
                 continue;
-            }
 
-            // 物理内存引用应该大于0
+            // 对应物理内存引用大于 0
             assert(memory_map[entry->index] > 0);
-
+            // 置为只读
             entry->write = false;
-
+            // 对应物理页引用加 1
             memory_map[entry->index]++;
 
             assert(memory_map[entry->index] < 255);
         }
+
         u32 paddr = copy_page(pte);
         dentry->index = IDX(paddr);
     }
@@ -458,10 +457,10 @@ page_entry_t *copy_pde()
 
 void free_pde()
 {
-    task_t* task = running_task();
-    assert(task->uid!=KERNEL_USER);
+    task_t *task = running_task();
+    assert(task->uid != KERNEL_USER);
 
-    page_entry_t* pde = get_pde();
+    page_entry_t *pde = get_pde();
 
     for (size_t didx = 2; didx < (sizeof(KERNEL_PAGE_TABLE) / 4); didx++)
     {
@@ -521,7 +520,7 @@ void page_fault(
     page_error_code_t *code = (page_error_code_t *)&error;
     task_t *task = running_task();
 
-    assert(KERNEL_MEMORY_SIZE <= vaddr&& vaddr < USER_STACK_TOP);
+    assert(KERNEL_MEMORY_SIZE <= vaddr && vaddr < USER_STACK_TOP);
 
     if (code->present)
     {
@@ -557,7 +556,7 @@ void page_fault(
         return;
     }
 
-    panic("page fault");
+    panic("page fault!!!");
 }
 
 int32 sys_brk(void *addr)
@@ -569,7 +568,7 @@ int32 sys_brk(void *addr)
     task_t *task = running_task();
     assert(task->uid != KERNEL_USER);
 
-    assert(KERNEL_MEMORY_SIZE <= brk && brk< USER_STACK_BOTTOM);
+    assert(KERNEL_MEMORY_SIZE <= brk && brk < USER_STACK_BOTTOM);
 
     u32 old_brk = task->brk;
 
@@ -589,4 +588,3 @@ int32 sys_brk(void *addr)
     task->brk = brk;
     return 0;
 }
-
