@@ -5,6 +5,7 @@
         "buffer.h": "c",
         "string.h": "c",
         "assert.h": "c",
-        "memory.h": "c"
+        "memory.h": "c",
+        "syscall.h": "c"
     }
 }

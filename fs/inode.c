@@ -90,7 +90,6 @@ inode_t *iget(dev_t dev, idx_t nr)
     inode->buf = buf;
 
     // 将缓冲视为一个 inode 描述符数组，获取对应的指针；
-    // TODO %
     inode->desc = &((inode_desc_t *)buf->data)[(inode->nr - 1) % BLOCK_INODES];
 
     inode->ctime = inode->desc->mtime;
@@ -104,7 +103,6 @@ void iput(inode_t *inode)
     if (!inode)
         return;
 
-    // TODO: need write... ?
     if (inode->buf->dirty)
     {
         bwrite(inode->buf);

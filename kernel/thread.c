@@ -7,6 +7,7 @@
 #include <onix/arena.h>
 #include <onix/stdio.h>
 #include <onix/stdlib.h>
+#include <onix/fs.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -38,7 +39,6 @@ void test_recursion()
 
 static void user_init_thread()
 {
-    int status;
 
     while (true)
     {
@@ -56,14 +56,10 @@ void init_thread()
 
 void test_thread()
 {
-    set_interrupt_state(true);
-    // test();
-    // mkdir("/world.txt", 0755);
-    // rmdir("/empty");
+    // set_interrupt_state(true);
 
-    link("/hello.txt", "/world.txt");
-    unlink("/hello.txt");
-
+    fd_t fd = open("/world.txt", O_RDWR | O_CREAT, 0755);
+    close(fd);
     while (true)
     {
         test();

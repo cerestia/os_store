@@ -131,7 +131,7 @@ buffer_t *getblk(dev_t dev, idx_t block)
     buffer_t *bf = get_from_hash_table(dev, block);
     if (bf)
     {
-        assert(bf->valid);
+        bf->count++;
         return bf;
     }
 
@@ -153,14 +153,17 @@ buffer_t *bread(dev_t dev, idx_t block)
     assert(bf != NULL);
     if (bf->valid)
     {
-        bf->count++;
         return bf;
     }
+    lock_acquire(&bf->lock);
+    if (!bf->valid)
+    {
+        device_request(bf->dev, bf->data, BLOCK_SECS, bf->block * BLOCK_SECS, 0, REQ_READ);
 
-    device_request(bf->dev, bf->data, BLOCK_SECS, bf->block * BLOCK_SECS, 0, REQ_READ);
-
-    bf->dirty = false;
-    bf->valid = true;
+        bf->dirty = false;
+        bf->valid = true;
+    }
+    lock_release(&bf->lock);
     return bf;
 }
 

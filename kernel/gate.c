@@ -33,13 +33,16 @@ static task_t *task = NULL;
 static u32 sys_test()
 {
 
-    inode_t *inode = inode_open("/world.txt", O_RDWR | O_CREAT, 0755);
-    assert(inode);
+    // inode_t *inode = inode_open("/world.txt", O_RDWR | O_CREAT, 0755);
+    // assert(inode);
 
-    char *buf = (char *)alloc_kpage(1);
-    int i = inode_read(inode, buf, 1024, 0);
+    // char *buf = (char *)alloc_kpage(1);
+    // int i = inode_read(inode, buf, 1024, 0);
 
-    iput(inode);
+    // memset(buf, 'A', 4096);
+    // inode_write(inode, buf, 4096, 0);
+
+    // iput(inode);
 
     char ch;
     device_t *device;
@@ -66,6 +69,10 @@ int32 sys_write(fd_t fd, char *buf, u32 len)
     panic("write!!!!");
     return 0;
 }
+
+extern fd_t sys_open();
+extern fd_t sys_creat();
+extern void sys_close();
 
 extern int sys_mkdir();
 extern int sys_rmdir();
@@ -94,6 +101,10 @@ void syscall_init()
 
     syscall_table[SYS_NR_BRK] = sys_brk;
     syscall_table[SYS_NR_WRITE] = sys_write;
+
+    syscall_table[SYS_NR_OPEN] = sys_open;
+    syscall_table[SYS_NR_CREAT] = sys_creat;
+    syscall_table[SYS_NR_CLOSE] = sys_close;
 
     syscall_table[SYS_NR_MKDIR] = sys_mkdir;
     syscall_table[SYS_NR_RMDIR] = sys_rmdir;

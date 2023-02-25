@@ -52,7 +52,7 @@ typedef struct inode_desc_t
     u16 zone[9]; // 直接 (0-6)、间接(7)或双重间接 (8) 逻辑块号
 } inode_desc_t;
 
-typedef struct inode_tf
+typedef struct inode_t
 {
     inode_desc_t *desc;
     struct buffer_t *buf;
@@ -96,6 +96,15 @@ typedef struct dentry_t
     char name[NAME_LEN]; // 文件名
 } dentry_t;
 
+typedef struct file_t
+{
+    inode_t *inode; // 文件 inode
+    u32 count;      // 引用计数
+    off_t offset;   // 文件偏移
+    int flags;      // 文件标记
+    int mode;       // 文件模式
+} file_t;
+
 super_block_t *get_super(dev_t dev);  // 获得 dev 对应的超级块
 super_block_t *read_super(dev_t dev); // 读取 dev 对应的超级块
 
@@ -126,5 +135,8 @@ int inode_write(inode_t *inode, char *buf, u32 len, off_t offset);
 
 // 释放 inode 所有文件块
 void inode_truncate(inode_t *inode);
+
+file_t *get_file();
+void put_file(file_t *file);
 
 #endif
