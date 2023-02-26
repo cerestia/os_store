@@ -87,6 +87,11 @@ int write(fd_t fd, char *buf, u32 len)
     return _syscall3(SYS_NR_WRITE, fd, (u32)buf, len);
 }
 
+int lseek(fd_t fd, off_t offset, int whence)
+{
+    return _syscall3(SYS_NR_LSEEK, fd, offset, whence);
+}
+
 int mkdir(char *pathname, int mode)
 {
     return _syscall2(SYS_NR_MKDIR, (u32)pathname, (u32)mode);

@@ -37,7 +37,7 @@ static u32 sys_test()
 }
 extern int sys_read();
 extern int sys_write();
-
+extern int sys_lseek();
 extern void task_yield();
 
 extern fd_t sys_open();
@@ -73,6 +73,7 @@ void syscall_init()
 
     syscall_table[SYS_NR_READ] = sys_read;
     syscall_table[SYS_NR_WRITE] = sys_write;
+    syscall_table[SYS_NR_LSEEK] = sys_lseek;
 
     syscall_table[SYS_NR_OPEN] = sys_open;
     syscall_table[SYS_NR_CREAT] = sys_creat;

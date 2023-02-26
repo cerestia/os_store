@@ -8,6 +8,7 @@
 #include <onix/stdio.h>
 #include <onix/stdlib.h>
 #include <onix/fs.h>
+#include <onix/string.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 
@@ -40,15 +41,13 @@ void test_recursion()
 static void user_init_thread()
 {
     char buf[256];
+    memset(buf, 'A', sizeof(buf));
+
     fd_t fd;
     int len = 0;
     fd = open("/hello.txt", O_RDWR, 0755);
-    len = read(fd, buf, sizeof(buf));
-    printf("hello.txt content: %s length %d\n", buf, len);
-    close(fd);
-
-    fd = open("/world.txt", O_CREAT | O_RDWR, 0755);
-    len = write(fd, buf, len);
+    lseek(fd, 5, SEEK_SET);
+    len = write(fd, buf, sizeof(buf));
     close(fd);
 
     while (true)
