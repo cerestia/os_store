@@ -8,6 +8,7 @@ typedef enum syscall_t
     SYS_NR_TEST,
     SYS_NR_EXIT = 1,
     SYS_NR_FORK = 2,
+    SYS_NR_READ = 3,
     SYS_NR_WRITE = 4,
     SYS_NR_OPEN = 5,
     SYS_NR_CLOSE = 6,
@@ -47,7 +48,9 @@ fd_t creat(char *filename, int mode);
 // 关闭文件
 void close(fd_t fd);
 
-int32 write(fd_t fd, char *buf, u32 len);
+int read(fd_t fd, char *buf, int len);
+
+int write(fd_t fd, char *buf, u32 len);
 
 // 创建目录
 int mkdir(char *pathname, int mode);

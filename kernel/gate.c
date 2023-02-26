@@ -33,42 +33,12 @@ static task_t *task = NULL;
 static u32 sys_test()
 {
 
-    // inode_t *inode = inode_open("/world.txt", O_RDWR | O_CREAT, 0755);
-    // assert(inode);
-
-    // char *buf = (char *)alloc_kpage(1);
-    // int i = inode_read(inode, buf, 1024, 0);
-
-    // memset(buf, 'A', 4096);
-    // inode_write(inode, buf, 4096, 0);
-
-    // iput(inode);
-
-    char ch;
-    device_t *device;
-
-    device = device_find(DEV_KEYBOARD, 0);
-    assert(device);
-    device_read(device->dev, &ch, 1, 0, 0);
-
-    device = device_find(DEV_CONSOLE, 0);
-    assert(device);
-    device_write(device->dev, &ch, 1, 0, 0);
     return 255;
 }
-extern int32 console_write();
+extern int sys_read();
+extern int sys_write();
 
 extern void task_yield();
-
-int32 sys_write(fd_t fd, char *buf, u32 len)
-{
-    if (fd == stdout || fd == stderr)
-    {
-        return console_write(NULL, buf, len);
-    }
-    panic("write!!!!");
-    return 0;
-}
 
 extern fd_t sys_open();
 extern fd_t sys_creat();
@@ -100,6 +70,8 @@ void syscall_init()
     syscall_table[SYS_NR_GETPPID] = sys_getppid;
 
     syscall_table[SYS_NR_BRK] = sys_brk;
+
+    syscall_table[SYS_NR_READ] = sys_read;
     syscall_table[SYS_NR_WRITE] = sys_write;
 
     syscall_table[SYS_NR_OPEN] = sys_open;
