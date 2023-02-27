@@ -26,11 +26,8 @@ void idle_thread()
         yield();
     }
 }
-#include <onix/mutex.h>
 
-extern u32 keyboard_read(char *buf, u32 count);
-
-lock_t lock;
+extern void osh_main();
 
 void test_recursion()
 {
@@ -40,22 +37,20 @@ void test_recursion()
 
 static void user_init_thread()
 {
-    char buf[256];
-    memset(buf, 'A', sizeof(buf));
-
-    fd_t fd;
-    int len = 0;
-    fd = open("/hello.txt", O_RDWR, 0755);
-    lseek(fd, 5, SEEK_SET);
-    len = write(fd, buf, sizeof(buf));
-    close(fd);
 
     while (true)
     {
-        char ch;
-        read(stdin, &ch, 1);
-        write(stdout, &ch, 1);
-        sleep(1000);
+        u32 status;
+        pid_t pid = fork();
+        if (pid)
+        {
+            pid_t child = waitpid(pid, &status);
+            printf("wait pid %d status %d %d\n", child, status, time());
+        }
+        else
+        {
+            osh_main();
+        }
     }
 }
 
@@ -73,7 +68,6 @@ void test_thread()
 
     while (true)
     {
-        test();
         sleep(10);
     }
 }

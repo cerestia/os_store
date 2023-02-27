@@ -81,7 +81,7 @@ inode_t *iget(dev_t dev, idx_t nr)
     inode = get_free_inode();
     inode->dev = dev;
     inode->nr = nr;
-    inode->count = 1;
+    inode->count++;
 
     list_push(&sb->inode_list, &inode->node);
     idx_t block = inode_block(sb, inode->nr);

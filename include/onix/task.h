@@ -25,22 +25,23 @@ typedef enum task_state_t
 
 typedef struct task_t
 {
-    u32 *stack;                         // 内核栈
-    list_node_t node;                   // 任务阻塞节点
-    task_state_t state;                 // 任务状态
-    u32 priority;                       // 任务优先级
-    int ticks;                          // 剩余时间片
-    u32 jiffies;                        // 上次执行时全局时间片
-    char name[TASK_NAME_LEN];           // 任务名
-    u32 uid;                            // 用户 id
-    u32 gid;                            // 用户组 id
-    pid_t pid;                          // 任务 id
-    pid_t ppid;                         // 父任务 id
-    u32 pde;                            // 页目录物理地址
-    struct bitmap_t *vmap;              // 进程虚拟内存位图
-    u32 brk;                            // 进程堆内存最高地址
-    int status;                         // 进程特殊状态
-    pid_t waitpid;                      // 进程等待的 pid
+    u32 *stack;               // 内核栈
+    list_node_t node;         // 任务阻塞节点
+    task_state_t state;       // 任务状态
+    u32 priority;             // 任务优先级
+    int ticks;                // 剩余时间片
+    u32 jiffies;              // 上次执行时全局时间片
+    char name[TASK_NAME_LEN]; // 任务名
+    u32 uid;                  // 用户 id
+    u32 gid;                  // 用户组 id
+    pid_t pid;                // 任务 id
+    pid_t ppid;               // 父任务 id
+    u32 pde;                  // 页目录物理地址
+    struct bitmap_t *vmap;    // 进程虚拟内存位图
+    u32 brk;                  // 进程堆内存最高地址
+    int status;               // 进程特殊状态
+    pid_t waitpid;            // 进程等待的 pid
+    char *pwd;                //
     struct inode_t *ipwd;               // 进程当前目录 inode program work directory
     struct inode_t *iroot;              // 进程根目录 inode
     u16 umask;                          // 进程用户权限

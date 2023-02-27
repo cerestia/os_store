@@ -16,16 +16,21 @@ typedef enum syscall_t
     SYS_NR_CREAT = 8,
     SYS_NR_LINK = 9,
     SYS_NR_UNLINK = 10,
+    SYS_NR_CHDIR = 12,
     SYS_NR_TIME = 13,
     SYS_NR_LSEEK = 19,
     SYS_NR_GETPID = 20,
     SYS_NR_MKDIR = 39,
     SYS_NR_RMDIR = 40,
     SYS_NR_BRK = 45,
-    SYS_NR_GETPPID = 64,
     SYS_NR_UMASK = 60,
+    SYS_NR_CHROOT = 61,
+    SYS_NR_GETPPID = 64,
+    SYS_NR_READDIR = 89,
     SYS_NR_YIELD = 158,
     SYS_NR_SLEEP = 162,
+    SYS_NR_GETCWD = 183,
+    SYS_NR_CLEAR = 200,
 } syscall_t;
 
 u32 test();
@@ -53,6 +58,18 @@ int read(fd_t fd, char *buf, int len);
 
 int write(fd_t fd, char *buf, u32 len);
 
+// 设置文件偏移量
+int lseek(fd_t fd, off_t offset, int whence);
+// 读取目录
+int readdir(fd_t fd, void *dir, int count);
+
+// 获取当前路径
+char *getcwd(char *buf, size_t size);
+// 切换当前目录
+int chdir(char *pathname);
+// 切换根目录
+int chroot(char *pathname);
+
 // 创建目录
 int mkdir(char *pathname, int mode);
 // 删除目录
@@ -67,4 +84,6 @@ time_t time();
 
 mode_t umask(mode_t mask);
 
+// 清屏
+void clear();
 #endif

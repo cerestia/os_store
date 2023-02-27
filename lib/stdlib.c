@@ -1,13 +1,15 @@
-#include<onix/stdlib.h>
+#include <onix/stdlib.h>
 
 void delay(u32 count)
 {
-    while(count--);
+    while (count--)
+        ;
 }
 
 void hang()
 {
-    while(true);
+    while (true)
+        ;
 }
 
 // 将 bcd 码转成整数
@@ -25,4 +27,22 @@ u8 bin_to_bcd(u8 value)
 u32 div_round_up(u32 num, u32 size)
 {
     return (num + size - 1) / size;
+}
+
+int atoi(const char *str)
+{
+    if (str == NULL)
+        return 0;
+    bool sign = 1;
+    int result = 0;
+    if (*str == '-')
+    {
+        sign = -1;
+        str++;
+    }
+    for (; *str; str++)
+    {
+        result = result * 10 + (*str - '0');
+    }
+    return result;
 }
